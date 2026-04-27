@@ -1,5 +1,5 @@
 /**
- * @file            main.jsx
+ * @file            src/main.jsx
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
@@ -7,7 +7,6 @@
  */
 
 import App from './App.jsx';
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 

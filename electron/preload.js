@@ -1,5 +1,5 @@
 /**
- * @file            preload.js
+ * @file            electron/preload.js
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
