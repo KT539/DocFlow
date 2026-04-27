@@ -1,0 +1,34 @@
+{
+  "name": "docflow",
+  "version": "1.0.0",
+  "description": "TPI project",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "concurrently \"npx vite\" \"electron .\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KT539/DocFlow.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/KT539/DocFlow/issues"
+  },
+  "homepage": "https://github.com/KT539/DocFlow#readme",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "concurrently": "^9.0.0",
+    "electron": "^30.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^5.0.0",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}
