@@ -1,5 +1,5 @@
 /**
- * @file            main.js
+ * @file            electron/main.js
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
