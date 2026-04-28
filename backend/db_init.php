@@ -1,4 +1,14 @@
 <?php
+/**
+ * @file            backend/db_init.php
+ * @project         DocFlow
+ * @author          Kilian Testard
+ * @project_lead    Pascal Hurni
+ * @last_modified   27-04-2026
+ */
+
+
+// used both AI and official doc to learn about PDO
 $dbPath = __DIR__ . '/../database/db.sqlite';
 
 try {
