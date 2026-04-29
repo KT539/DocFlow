@@ -7,13 +7,13 @@
  * @last_modified   27-04-2026
  */
 
-
 // used both AI and official doc to learn about PDO
-$dbPath = __DIR__ . '/../database/db.sqlite';
+
+
+require_once 'db.php';
 
 try {
-    $pdo = new PDO("sqlite:$dbPath");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = getDb();
 
     $sql = "
     CREATE TABLE IF NOT EXISTS flows (
