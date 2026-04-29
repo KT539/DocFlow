@@ -9,8 +9,7 @@
 
 export default function Nav({ setCurrentPage, activePage, collapsed, setCollapsed }) {
   return (
-    <nav className={`h-screen bg-neutral-800 flex flex-col border-r border-neutral-700 transition-all duration-300 ${collapsed ? 'w-16 p-2' : 'w-72 p-6'}`}>
-      
+    <nav className={`min-h-screen bg-neutral-800 flex flex-col border-r border-neutral-700 transition-all duration-300 ${collapsed ? 'w-16 p-2' : 'w-72 p-6'}`}>
       <div className="mb-6 flex items-center justify-between">
         {!collapsed && (
           <div>
@@ -65,7 +64,7 @@ export default function Nav({ setCurrentPage, activePage, collapsed, setCollapse
       <div className="mt-auto pt-6">
         <hr className="border-t border-neutral-400 mb-5" />
         <p className="text-neutral-400 text-[10px]">
-          version 0.0.1
+          version 1.0.0
         </p>
       </div>
     </nav>
