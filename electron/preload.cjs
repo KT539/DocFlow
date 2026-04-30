@@ -1,5 +1,5 @@
 /**
- * @file            electron/preload.js
+ * @file            electron/preload.cjs
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
@@ -11,8 +11,9 @@
 and the renderer process (Chromium+React), avoiding direct Node.js access from the renderer */
 
 // import the ipcRenderer object, and the contextBridge module which allows to safely expose functions to the renderer
-import { contextBridge, ipcRenderer } from 'electron';
+const { contextBridge, ipcRenderer } = require('electron');
 
 // creates the window.electronAPI object, making it accessible from the renderer
 contextBridge.exposeInMainWorld('electronAPI', {
+    selectDirectory: () => ipcRenderer.invoke('select-directory')
 });

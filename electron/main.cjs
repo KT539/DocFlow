@@ -7,14 +7,10 @@
  */
 
 
-import { app, BrowserWindow, dialog, ipcMain} from 'electron'; // import the needed electron modules
-import path from 'path'; // native Node module to handle file paths cross-platform
-import  { fileURLToPath } from 'url';
-import { spawn } from 'child_process'; // native Node module to launch external processes from the app, like my PHP server
+const { app, BrowserWindow, dialog, ipcMain } = require('electron'); // import the needed electron modules
+const path = require('path'); // native Node module to handle file paths cross-platform
+const { spawn } = require('child_process'); // native Node module to launch external processes from the app, like my PHP server
 
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 let phpServer;
 
@@ -34,12 +30,25 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false, // disable the renderer's direct access to Node.js
       contextIsolation: true, // isolate the renderer for better security
-      preload: path.join(__dirname, 'preload.js') // runs preload.js before the renderer
+      preload: path.join(__dirname, 'preload.cjs') // runs preload.cjs before the renderer
     }
   });
 
   win.loadURL('http://localhost:5173'); // load the React app served by Vite
-}
+};
+
+
+// handles the 'select-directory' IPC call : opens the windows file explorer and returns the selected path
+ipcMain.handle('select-directory', async (event) => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory']
+  });
+  if (result.canceled) {
+    return null; // return null if the user closed the dialog without selecting
+  } else {
+    return result.filePaths[0]; // return the selected folder path
+  }
+});
 
 
 // triggers once electron is initialized : start the PHP server, then create a window

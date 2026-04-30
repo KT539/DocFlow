@@ -22,21 +22,21 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'flows': return <Flows />;
-      case 'new_flows': return <NewFlows />;
+      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />;
       case 'settings': return <Settings />;
       default: return <Flows />;
     }
   };
 
   return (
-    <div className="flex h-screen w-full bg-gray-200">
+    <div className="flex min-h-screen w-full bg-gray-200">
       <Nav 
         setCurrentPage={setCurrentPage} 
         activePage={currentPage} 
         collapsed={navCollapsed}
         setCollapsed={setNavCollapsed}
       />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 overflow-y-auto">
         {renderPage()}
       </main>
     </div>
