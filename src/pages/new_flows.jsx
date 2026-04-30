@@ -18,7 +18,6 @@ export default function NewFlows({ setCurrentPage }) {
         convert_docx: true,
         convert_xlsx: true,
     });
-
     const [status, setStatus] = useState(null);
 
     const handleChange = (e) => {
@@ -46,6 +45,20 @@ export default function NewFlows({ setCurrentPage }) {
         }
     };
 
+    const handleSourceDirSelection = async () => {
+        const result = await window.electronAPI.selectDirectory();
+        if (result !== null) {
+            setForm(prev => ({ ...prev, source_dir: result }))
+        }
+    };
+
+    const handleDestDirSelection = async () => {
+        const result = await window.electronAPI.selectDirectory();
+        if (result !== null) {
+            setForm(prev => ({ ...prev, dest_dir: result }));
+        }
+    };
+
 
     return (
         <div className="w-full bg-neutral-200 text-black flex flex-col p-4">
@@ -64,25 +77,45 @@ export default function NewFlows({ setCurrentPage }) {
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="font-semibold text-neutral-700">Dossier source</label>
-                    <input
-                        type="text"
-                        name="source_dir"
-                        value={form.source_dir}
-                        onChange={handleChange}
-                        placeholder="C:\Documents\Source"
-                        className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            name="source_dir"
+                            value={form.source_dir}
+                            onChange={handleChange}
+                            placeholder="C:\Documents\Source"
+                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                            onClick={handleSourceDirSelection}
+                            className="p-2.5 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
+                            title="Parcourir les dossiers">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.31c-.195 0-.387-.078-.531-.22Z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="font-semibold text-neutral-700">Dossier destination</label>
-                    <input
-                        type="text"
-                        name="dest_dir"
-                        value={form.dest_dir}
-                        onChange={handleChange}
-                        placeholder="C:\Documents\PDF"
-                        className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            name="dest_dir"
+                            value={form.dest_dir}
+                            onChange={handleChange}
+                            placeholder="C:\Documents\PDF"
+                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                            onClick={handleDestDirSelection}
+                            className="p-2.5 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
+                            title="Parcourir les dossiers">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.31c-.195 0-.387-.078-.531-.22Z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <hr className="border-neutral-300" />
                 <div className="flex flex-col gap-3">

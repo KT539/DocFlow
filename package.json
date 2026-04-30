@@ -2,7 +2,7 @@
   "name": "docflow",
   "version": "1.0.0",
   "description": "TPI project",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "scripts": {
     "start": "concurrently \"npx vite\" \"wait-on http://localhost:5173 && electron .\""
   },
