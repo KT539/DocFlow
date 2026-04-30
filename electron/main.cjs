@@ -9,7 +9,7 @@
 
 const { app, BrowserWindow, dialog, ipcMain } = require('electron'); // import the needed electron modules
 const path = require('path'); // native Node module to handle file paths cross-platform
-const { spawn } = require('child_process'); // native Node module to launch external processes from the app, like my PHP server
+const { spawn, execSync } = require('child_process'); // spawn is a native Node module to launch external processes from the app, like my PHP server
 
 
 let phpServer;
@@ -53,6 +53,7 @@ ipcMain.handle('select-directory', async (event) => {
 
 // triggers once electron is initialized : start the PHP server, then create a window
 app.whenReady().then(() => {
+  execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // initalize the db
   startPhpServer();
   createWindow();
 });

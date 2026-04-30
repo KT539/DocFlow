@@ -20,7 +20,7 @@ function getDb() {
 function getAllFlows() {
     $pdo = getDb();
     $stmt = $pdo->query("SELECT * FROM flows");
-    return $stmt->fetch(PDO::FETCH_ASSOC);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 };
 
 function getFlow($id) {
