@@ -25,8 +25,8 @@ function startPhpServer() {
 // creates the main app window with IPC security enabled and load the React app from Vite's dev server
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1100,
-    height: 750,
+    width: 1300,
+    height: 800,
     webPreferences: {
       nodeIntegration: false, // disable the renderer's direct access to Node.js
       contextIsolation: true, // isolate the renderer for better security
