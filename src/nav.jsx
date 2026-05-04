@@ -3,14 +3,17 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   27-04-2026
+ * @last_modified   04-05-2026
  */
 
 
 export default function Nav({ setCurrentPage, activePage, collapsed, setCollapsed }) {
   return (
+    // conditional width and padding depending on whether the navbar is collapsed or not
     <nav className={`min-h-screen bg-neutral-800 flex flex-col border-r border-neutral-700 transition-all duration-300 ${collapsed ? 'w-16 p-2' : 'w-72 p-6'}`}>
       <div className="mb-6 flex items-center justify-between">
+        {/* React short-circuit : if A is true, then return B ; if A is false, return A
+        so is !collapsed = true, displays the div block ; is !collapsed is false (collapsed=true), displays nothing */}
         {!collapsed && (
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">DocFlow</h1>
@@ -21,6 +24,7 @@ export default function Nav({ setCurrentPage, activePage, collapsed, setCollapse
           onClick={() => setCollapsed(!collapsed)}
           className="text-neutral-400 hover:text-white transition-colors ml-auto">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+            {/* modify the arrow icon depending on whether the navbar is collasped or not ; suggestion from AI */}
             <path strokeLinecap="round" strokeLinejoin="round" d={collapsed ? "M8.25 4.5l7.5 7.5-7.5 7.5" : "M15.75 19.5L8.25 12l7.5-7.5"} />
           </svg>
         </button>

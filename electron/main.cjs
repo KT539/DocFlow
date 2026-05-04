@@ -3,13 +3,13 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   27-04-2026
+ * @last_modified   04-05-2026
  */
 
 
-const { app, BrowserWindow, dialog, ipcMain } = require('electron'); // import the needed electron modules
-const path = require('path'); // native Node module to handle file paths cross-platform
-const { spawn, execSync } = require('child_process'); // spawn is a native Node module to launch external processes from the app, like my PHP server
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const path = require('path');
+const { spawn, execSync } = require('child_process');
 
 
 let phpServer;
@@ -30,7 +30,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false, // disable the renderer's direct access to Node.js
       contextIsolation: true, // isolate the renderer for better security
-      preload: path.join(__dirname, 'preload.cjs') // runs preload.cjs before the renderer
+      preload: path.join(__dirname, 'preload.cjs') // only bridge between main and renderer processes
     }
   });
 
@@ -51,9 +51,9 @@ ipcMain.handle('select-directory', async (event) => {
 });
 
 
-// triggers once electron is initialized : start the PHP server, then create a window
+// triggers once electron is initialized
 app.whenReady().then(() => {
-  execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // initalize the db
+  execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db is completely initialized
   startPhpServer();
   createWindow();
 });

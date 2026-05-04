@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   27-04-2026
+ * @last_modified   04-05-2026
  */
 
 
@@ -20,11 +20,12 @@ export default function NewFlows({ setCurrentPage }) {
     });
     const [status, setStatus] = useState(null);
 
+    // generic input handler ; !! from AI !!
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value, type, checked } = e.target; // when handleChange is called, returns the characteristics of the new input received from the user
         setForm(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' ? checked : value // keeps the old values with a spread operator, and adds to it the new value (or boolean if it is a checkbox)
         }));
     };
 
@@ -32,19 +33,20 @@ export default function NewFlows({ setCurrentPage }) {
         setStatus(null);
         try {
             const res = await fetch('/api/flows.php', {
-                method: 'POST',
+                method: 'POST', // specify the method (fetch has GET as its default method)
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
+                body: JSON.stringify(form) // turns the form (javascript object) into a string to be sent to the PHP API
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setStatus('success');
-            setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true });
+            setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true }); // resets the form
         } catch (err) {
             setStatus('error');
         }
     };
 
+    // opens a file explorer window through Electron, and injects the selected path into the form
     const handleSourceDirSelection = async () => {
         const result = await window.electronAPI.selectDirectory();
         if (result !== null) {
@@ -126,6 +128,7 @@ export default function NewFlows({ setCurrentPage }) {
                             <p className="text-sm text-neutral-500">Convertir automatiquement les nouveaux fichiers</p>
                         </div>
                         <button
+                            // toggle : keeps the values of the other fields with the spread operator, and inverts the value of the auto_trigger boolean ; help from AI
                             onClick={() => setForm(prev => ({ ...prev, auto_trigger: !prev.auto_trigger }))}
                             className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${form.auto_trigger ? 'bg-blue-500' : 'bg-neutral-300'}`}>
                             <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${form.auto_trigger ? 'left-7' : 'left-1'}`} />
@@ -136,7 +139,9 @@ export default function NewFlows({ setCurrentPage }) {
                         {[
                             { name: 'convert_docx', label: 'Fichiers Word (.docx)' },
                             { name: 'convert_xlsx', label: 'Fichiers Excel (.xlsx)' },
+                        // uses .map() to create a checkob for each of the 2 options
                         ].map(option => (
+                            // use option.name as unique key
                             <label key={option.name} className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -152,6 +157,7 @@ export default function NewFlows({ setCurrentPage }) {
                         ))}
                     </div>
                     <hr className="border-neutral-300" />
+                    {/* conditional rendering according to the status */}
                     {status === 'success' && (
                     <p className="text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
                         Flow créé avec succès

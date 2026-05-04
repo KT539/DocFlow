@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   27-04-2026
+ * @last_modified   04-05-2026
  */
 
 
@@ -18,11 +18,11 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('flows');
   const [navCollapsed, setNavCollapsed] = useState(false);
 
-  // switch case to render the pages
+  // switch case to render the pages with conditional rendering
   const renderPage = () => {
     switch (currentPage) {
       case 'flows': return <Flows />;
-      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />;
+      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />; // give setCurrentPage the the NewFlows component as a prop
       case 'settings': return <Settings />;
       default: return <Flows />;
     }
@@ -31,7 +31,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen w-full bg-gray-200">
       <Nav 
-        setCurrentPage={setCurrentPage} 
+        setCurrentPage={setCurrentPage} // props so the menu can change pages and collapse the navbar
         activePage={currentPage} 
         collapsed={navCollapsed}
         setCollapsed={setNavCollapsed}

@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   27-04-2026
+ * @last_modified   04-05-2026
  */
 
 
@@ -13,12 +13,13 @@ export default function Flows() {
     const [flows, setFlows] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    
     const fetchFlows = async () => {
         try {
             const res = await fetch('/api/flows.php');
             const data = await res.json();
-            // return a single object or an array ; syntax from AI
-            setFlows(Array.isArray(data) ? data : (data ? [data] : []));
+            // the API can return a single object or an array ; this forces it into an array, so that .map() can manipulate it  !! from AI !!
+            setFlows(Array.isArray(data) ? data : (data ? [data] : [])); // if data is already an array, it is used as is ; if not, then data is either put into an array, or is null/undefined and an empty array is retunred instead
         } catch (err) {
             console.error("Erreur lors du chargement des Flows :", err);
         } finally {
@@ -26,19 +27,21 @@ export default function Flows() {
         }
     };
 
-    useEffect(() => { fetchFlows(); }, []);
+    // automatic load at launch
+    useEffect(() => { fetchFlows(); }, []); // empty array of dependencies --> the instruction is executed a single time, just after th first rendering
 
+    // deletes a flow after confirmation
     const handleDelete = async (id) => {
         if (!confirm("Supprimer ce Flow ?")) return;
         await fetch(`/api/flows.php?id=${id}`, { method: 'DELETE' });
-        fetchFlows();
+        fetchFlows(); // refreshes the list after a DELETE
     };
 
     
     return (
         <div className="p-8">
             <h1 className="text-3xl font-semibold mb-3">Mes Flows</h1>
-            <p className="text xl text-neutral-500 mb-8">Gérez vos flux de conversion de documents</p>
+            <p className="text-xl text-neutral-500 mb-8">Gérez vos flux de conversion de documents</p>
 
             {loading ? (
                 <p className="text-neutral-500">Chargement...</p>
@@ -55,7 +58,8 @@ export default function Flows() {
                                 <div className="flex justify-between items-center mb-3">
                                     <div className="flex items-center gap-3">
                                         <h2 className="text-xl font-semibold text-neutral-700">{flow.name}</h2>
-                                        {flow.auto_trigger ===1 && (
+                                        {/* SQLite has no native BOOLEAN type and stores the value as 0/1 ; if a 1 or 0 value is specified, the short-circuit would display either the <span> or a 0 */}
+                                        {flow.auto_trigger === 1 && (
                                             <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-medium border border-blue-200">
                                                 Auto
                                             </span>
@@ -91,6 +95,7 @@ export default function Flows() {
                                 <div className="flex justify-between items-center text-neutral-600 text-sm">
                                     <div className="flex gap-6 items-center">
                                         <span>{flow.last_run || 'Jamais utilisé'}</span>
+                                        {/* uses the react short-circuit to display a string if true and 0 if false ; then filters out the false values anc joins the true values */}
                                         <span>Types : {[flow.convert_docx && 'docx', flow.convert_xlsx && 'xlsx'].filter(Boolean).join(', ')}</span>
                                         <span>Conversions : {flow.count || 0}</span>
                                     </div>

@@ -4,17 +4,20 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   27-04-2026
+ * @last_modified   04-05-2026
  */
 
-// used both AI and official doc to learn about PDO
+// used both AI and official doc to learn about PDO and its syntax
 
 
-require_once 'db.php';
+require_once 'db.php'; // imports the file a single time
 
 try {
-    $pdo = getDb();
+    $pdo = getDb(); // get the PDO instance
 
+    /* if the tables already exist, the instruction is ignored ;
+    ON DELETE CASCADE allows to automatically delete conversion history when a flow is deleted ;
+    TEXT CHECK is a sql constraint, ensuring the status can only be SUCCESS or ERROR */
     $sql = "
     CREATE TABLE IF NOT EXISTS flows (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,5 +42,5 @@ try {
     $pdo->exec($sql);
     echo "Base de données initialisée avec succès";
 } catch (PDOException $e) {
-    die("Erreur : " . $e->getMessage());
+    die("Erreur : " . $e->getMessage()); // die stops the script ; execSync in electron/main.js will then stop the program from executing
 }
