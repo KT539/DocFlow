@@ -41,6 +41,7 @@ export default function NewFlows({ setCurrentPage }) {
             if (!res.ok) throw new Error(data.error);
             setStatus('success');
             setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true }); // resets the form
+            setCurrentPage('flows');
         } catch (err) {
             setStatus('error');
         }
