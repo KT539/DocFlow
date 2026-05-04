@@ -21,7 +21,7 @@ $id = $_GET['id'] ?? null;
 switch ($method) {
     case 'GET':
         if ($id) {
-            $flow = getFlow($id); // if there is an ID, call getFlow()
+            $flow = getFlow($id); // if there is an ID, calls getFlow()
             if (!$flow) {
                 http_response_code(404);
                 echo json_encode(['error' => 'Flow introuvable']);
@@ -29,18 +29,26 @@ switch ($method) {
             }
             echo json_encode($flow);
         } else {
-            $flows = getAllFlows(); // is there is no ID, call getAllFlows()
+            $flows = getAllFlows(); // if there is no ID, calls getAllFlows()
             echo json_encode($flows);
         }
         break;
 
     case 'POST':
-        // decode the data from the raw body of the query and build a PHP array
+        // decodes the data from the raw body of the query and builds a PHP array
         $data = json_decode(file_get_contents('php://input'), true); // !! from AI !!
 
+        // checks that mandatory fields are filled in
         if (empty($data['name']) || empty($data['source_dir']) || empty($data['dest_dir'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Champs manquants']);
+            exit;
+        }
+
+        $hasFormat = ($data['convert_docx'] || $data['convert_xlsx']);
+        if (!$hasFormat) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Veuillez sélectionner au moins un format de fichiers']);
             exit;
         }
 
@@ -62,7 +70,7 @@ switch ($method) {
             echo json_encode(['error' => 'ID manquant']);
             exit;
         }
-        // decode the data from the rwa body of the query and build a PHP array
+        // decodes the data from the rwa body of the query and builds a PHP array
         $data = json_decode(file_get_contents('php://input'), true); // !! from AI !!
         $updated = updateFlow($id, $data);
         if (!$updated) {

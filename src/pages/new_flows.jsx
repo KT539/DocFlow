@@ -31,6 +31,13 @@ export default function NewFlows({ setCurrentPage }) {
 
     const handleSubmit = async () => {
         setStatus(null);
+
+        const hasFormat = form.convert_docx || form.convert_xlsx; // ensures at least 1 file format is selected
+        if (!hasFormat) { 
+            setStatus('error_no_format'); // or changes the status and stops the execution
+            return; 
+        }
+
         try {
             const res = await fetch('/api/flows.php', {
                 method: 'POST', // specify the method (fetch has GET as its default method)
@@ -41,7 +48,7 @@ export default function NewFlows({ setCurrentPage }) {
             if (!res.ok) throw new Error(data.error);
             setStatus('success');
             setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true }); // resets the form
-            setCurrentPage('flows');
+            setTimeout(() => setCurrentPage('flows'), 1500); // returns to main page after 1.5 seconds
         } catch (err) {
             setStatus('error');
         }
@@ -161,12 +168,17 @@ export default function NewFlows({ setCurrentPage }) {
                     {/* conditional rendering according to the status */}
                     {status === 'success' && (
                     <p className="text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
-                        Flow créé avec succès
+                        Flow créé avec succès.
                     </p>
                     )}
                     {status === 'error' && (
                         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
-                            Erreur lors de la création — vérifiez les champs
+                            Erreur lors de la création — vérifiez les champs.
+                        </p>
+                    )}
+                    {status === 'error_no_format' && (
+                        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                            Veuillez sélectionner au moins un format de fichier.
                         </p>
                     )}
                     <div className="flex gap-3">
