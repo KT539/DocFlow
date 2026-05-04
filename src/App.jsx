@@ -11,18 +11,21 @@ import { useState } from 'react';
 import Nav from './nav.jsx';
 import Flows from './pages/flows.jsx';
 import NewFlows from './pages/new_flows.jsx';
+import UpdateFlows from './pages/update_flows.jsx';
 import Settings from './pages/settings.jsx';
 
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('flows');
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [selectedFlowId, setSelectedFlowId] = useState(null);
 
   // switch case to render the pages with conditional rendering
   const renderPage = () => {
     switch (currentPage) {
-      case 'flows': return <Flows />;
-      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />; // gives setCurrentPage to the NewFlows component as a prop
+      case 'flows': return <Flows setCurrentPage={setCurrentPage} setSelectedFlowId={setSelectedFlowId} />; // gives props to my components
+      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />; 
+      case 'update_flows': return <UpdateFlows setCurrentPage={setCurrentPage} flowId={selectedFlowId} />
       case 'settings': return <Settings />;
       default: return <Flows />;
     }
