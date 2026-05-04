@@ -14,7 +14,7 @@
 function getDb() {
     $dbPath = __DIR__ . '/../database/db.sqlite';
     $pdo = new PDO("sqlite:$dbPath");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // set the PDO to error reporting mode and configure it to throw PDOExceptions
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // sets the PDO to error reporting mode and configures it to throw PDOExceptions
     return $pdo;
 };
 

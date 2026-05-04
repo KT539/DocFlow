@@ -22,7 +22,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'flows': return <Flows />;
-      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />; // give setCurrentPage the the NewFlows component as a prop
+      case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />; // gives setCurrentPage to the NewFlows component as a prop
       case 'settings': return <Settings />;
       default: return <Flows />;
     }

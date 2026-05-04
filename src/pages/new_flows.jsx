@@ -40,7 +40,7 @@ export default function NewFlows({ setCurrentPage }) {
 
         try {
             const res = await fetch('/api/flows.php', {
-                method: 'POST', // specify the method (fetch has GET as its default method)
+                method: 'POST', // specifies the method (fetch has GET as its default method)
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form) // turns the form (javascript object) into a string to be sent to the PHP API
             });
@@ -147,9 +147,9 @@ export default function NewFlows({ setCurrentPage }) {
                         {[
                             { name: 'convert_docx', label: 'Fichiers Word (.docx)' },
                             { name: 'convert_xlsx', label: 'Fichiers Excel (.xlsx)' },
-                        // uses .map() to create a checkob for each of the 2 options
+                        // uses .map() to create a checkbox for each of the 2 options
                         ].map(option => (
-                            // use option.name as unique key
+                            // uses option.name as unique key
                             <label key={option.name} className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="checkbox"

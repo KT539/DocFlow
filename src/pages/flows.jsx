@@ -19,7 +19,7 @@ export default function Flows() {
             const res = await fetch('/api/flows.php');
             const data = await res.json();
             // the API can return a single object or an array ; this forces it into an array, so that .map() can manipulate it  !! from AI !!
-            setFlows(Array.isArray(data) ? data : (data ? [data] : [])); // if data is already an array, it is used as is ; if not, then data is either put into an array, or is null/undefined and an empty array is retunred instead
+            setFlows(Array.isArray(data) ? data : (data ? [data] : [])); // if data is already an array, it is used as is ; if not, then data is either put into an array, or is null/undefined and an empty array is returned instead
         } catch (err) {
             console.error("Erreur lors du chargement des Flows :", err);
         } finally {
@@ -27,7 +27,6 @@ export default function Flows() {
         }
     };
 
-    // automatic load at launch
     useEffect(() => { fetchFlows(); }, []); // empty array of dependencies --> the instruction is executed a single time, just after th first rendering
 
     // deletes a flow after confirmation
@@ -95,7 +94,7 @@ export default function Flows() {
                                 <div className="flex justify-between items-center text-neutral-600 text-sm">
                                     <div className="flex gap-6 items-center">
                                         <span>{flow.last_run || 'Jamais utilisé'}</span>
-                                        {/* uses the react short-circuit to display a string if true and 0 if false ; then filters out the false values anc joins the true values */}
+                                        {/* uses the react short-circuit to display a string if true and 0 if false ; then filters out the false values and joins the true values */}
                                         <span>Types : {[flow.convert_docx && 'docx', flow.convert_xlsx && 'xlsx'].filter(Boolean).join(', ')}</span>
                                         <span>Conversions : {flow.count || 0}</span>
                                     </div>

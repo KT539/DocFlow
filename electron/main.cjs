@@ -22,19 +22,19 @@ function startPhpServer() {
   phpServer.stderr.on('data', (data) => console.error(`PHP Error: ${data}`));
 }
 
-// creates the main app window with IPC security enabled and load the React app from Vite's dev server
+// creates the main app window with IPC security enabled and loads the React app from Vite's dev server
 function createWindow() {
   const win = new BrowserWindow({
     width: 1300,
     height: 800,
     webPreferences: {
-      nodeIntegration: false, // disable the renderer's direct access to Node.js
-      contextIsolation: true, // isolate the renderer for better security
+      nodeIntegration: false, // disables the renderer's direct access to Node.js
+      contextIsolation: true, // isolates the renderer for better security
       preload: path.join(__dirname, 'preload.cjs') // only bridge between main and renderer processes
     }
   });
 
-  win.loadURL('http://localhost:5173'); // load the React app served by Vite
+  win.loadURL('http://localhost:5173'); // loads the React app served by Vite
 };
 
 
@@ -44,22 +44,22 @@ ipcMain.handle('select-directory', async (event) => {
     properties: ['openDirectory']
   });
   if (result.canceled) {
-    return null; // return null if the user closed the dialog without selecting
+    return null; // returns null if the user closed the dialog without selecting
   } else {
-    return result.filePaths[0]; // return the selected folder path
+    return result.filePaths[0]; // returns the selected folder path
   }
 });
 
 
 // triggers once electron is initialized
 app.whenReady().then(() => {
-  execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db is completely initialized
+  execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db initialization is complete
   startPhpServer();
   createWindow();
 });
 
 // triggers when all windows are closed
 app.on('window-all-closed', () => {
-  if (phpServer) phpServer.kill(); // terminate the PHP process so it doesn't keep running in the background
-  if (process.platform !== 'darwin') app.quit(); // electron convention for macOS ; !! help from AI !!
+  if (phpServer) phpServer.kill(); // terminates the PHP process so it doesn't keep running in the background
+  if (process.platform !== 'darwin') app.quit(); // electron convention for macOS ; !! from AI !!
 });

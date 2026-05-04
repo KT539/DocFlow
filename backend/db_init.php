@@ -13,7 +13,7 @@
 require_once 'db.php'; // imports the file a single time
 
 try {
-    $pdo = getDb(); // get the PDO instance
+    $pdo = getDb(); // gets the PDO instance
 
     /* if the tables already exist, the instruction is ignored ;
     ON DELETE CASCADE allows to automatically delete conversion history when a flow is deleted ;
