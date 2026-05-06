@@ -52,8 +52,9 @@ foreach ($files as $file) {
     if ($extension === 'docx' && $flow['convert_docx']) {
         $partialCommand = '$word = New-Object -ComObject Word.Application; ' . // opens Word in the background
                      '$word.Visible = $false; ' . // ensures the app stays hidden in the background
-                     '$doc = $word.Documents.Open(\'' . $inputPath . '\'); ' .
-                     '$doc.ExportAsFixedFormat(\'' . $outputPath . '\', 17); ' . // executes the conversion ; 17 = internal code for PDF format in Word
+                     // double the single ', to rpevent security risk via injection
+                     '$doc = $word.Documents.Open(\'' . str_replace("'", "''", $inputPath) . '\'); ' . // uses str_replace() to escape the variable
+                     '$doc.ExportAsFixedFormat(\'' . str_replace("'", "''", $outputPath) . '\', 17); ' . // executes the conversion ; 17 = internal code for PDF format in Word
                      '$doc.Close(0); ' . // closes Word after the conversion ; (0) doesn't save the changes, to avoid opening a contextual window
                      '$word.Quit();';
     }
@@ -61,8 +62,8 @@ foreach ($files as $file) {
         $partialCommand = '$excel = New-Object -ComObject Excel.Application; ' .
                      '$excel.Visible = $false; ' .
                      '$excel.DisplayAlerts = $false; ' . // avoids opening contextual windows
-                     '$wb = $excel.Workbooks.Open(\'' . $inputPath . '\'); ' .
-                     '$wb.ExportAsFixedFormat(0, \'' . $outputPath . '\'); ' . // 0 = internal code for PDF format in Excel
+                     '$wb = $excel.Workbooks.Open(\'' . str_replace("'", "''", $inputPath) . '\'); ' .
+                     '$wb.ExportAsFixedFormat(0, \'' . str_replace("'", "''", $outputPath) . '\'); ' . // 0 = internal code for PDF format in Excel
                      '$wb.Close($false); ' .
                      '$excel.Quit();';
     }
