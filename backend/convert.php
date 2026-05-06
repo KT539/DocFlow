@@ -73,28 +73,79 @@ foreach ($files as $file) {
     $partialCommand = "";
 
     // prepare the partial command depending on the extension
-    // uses simple '' instead of double "", so that the $variables intented for PowerShell aren't interpreted by PHP
+    // uses simple '' instead of double "", so that the $variables intended for PowerShell aren't interpreted by PHP
+    
+    /*  
+        New-Object opens Word in the background ;
+        Get-Process gets the process's ID, so it can be killed later ; !! from AI !! ;
+        $word.Visible = $false ensures Word remains hidden in the background and runs in "non-interactive mode" ;
+        17 is the internal code for PDF format in Word ; 
+        .Close(0) closes Word without saving the changes, to avoid opening a contextual window
+        the Start-Sleep block forces a kill on the process if it is still silently running after 2 seconds ; !! from AI !! ;
+        the finally block frees the COM object by force, and cleans up the RAM ; !! from AI !! ;
+    */
+
     if ($isDocx) {
-        $partialCommand = '$word = New-Object -ComObject Word.Application; ' . // opens Word in the background
-                     '$word.Visible = $false; ' . // ensures the app stays hidden in the background
-                     '$doc = $word.Documents.Open(\'' . $safeInput . '\'); ' .
-                     '$doc.ExportAsFixedFormat(\'' . $safeOutput . '\', 17); ' . // executes the conversion ; 17 = internal code for PDF format in Word
-                     '$doc.Close(0); ' . // closes Word after the conversion ; (0) doesn't save the changes, to avoid opening a contextual window
-                     '$word.Quit();';
-    }
-    elseif ($isXlsx) {
-        $partialCommand = '$excel = New-Object -ComObject Excel.Application; ' .
-                     '$excel.Visible = $false; ' .
-                     '$excel.DisplayAlerts = $false; ' . // avoids opening contextual windows
-                     '$wb = $excel.Workbooks.Open(\'' . str_replace("'", "''", $inputPath) . '\'); ' .
-                     '$wb.ExportAsFixedFormat(0, \'' . str_replace("'", "''", $outputPath) . '\'); ' . // 0 = internal code for PDF format in Excel
-                     '$wb.Close($false); ' .
-                     '$excel.Quit();';
+        $partialCommand = '
+            try {
+                $word = New-Object -ComObject Word.Application;
+                $word_pid = (Get-Process -Name "Winword" | Select-Object -ExpandProperty Id | Sort-Object -Descending)[0];
+                $word.Visible = $false;
+                $doc = $word.Documents.Open(\'' . $safeInput . '\');
+                $doc.ExportAsFixedFormat(\'' . $safeOutput . '\', 17);
+                $doc.Close(0);
+                $word.Quit();
+                Start-Sleep -Seconds 2;
+                if (Get-Process -Id $word_pid -ErrorAction SilentlyContinue) {
+                    Stop-Process -Id $word_pid -Force
+                };
+            } finally {
+                if ($doc) { [System.Runtime.Interopservices.Marshal]::ReleaseComObject($doc) | Out-Null };
+                if ($word) {
+                    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($word) | Out-Null;
+                    [System.GC]::Collect();
+                    [System.GC]::WaitForPendingFinalizers();
+                };
+            };';
     }
 
+    /*  
+        $excel.DisplayAlerts = $false avoids opening contextual windows ;
+        0 = internal code for PDF format in Excel ;
+        .Close($false) closes Excel without saving the changes, to avoid opening a contextual window ;
+    */
+
+    elseif ($isXlsx) {
+        $partialCommand = '
+            try {
+                $excel = New-Object -ComObject Excel.Application;
+                $excel_pid = (Get-Process -Name "Excel" | Select-Object -ExpandProperty Id | Sort-Object -Descending)[0];
+                $excel.Visible = $false;
+                $excel.DisplayAlerts = $false;
+                $wb = $excel.Workbooks.Open(\'' . $safeInput . '\');
+                $wb.ExportAsFixedFormat(0, \'' . $safeOutput . '\');
+                $wb.Close($false);
+                $excel.Quit();
+                Start-Sleep -Seconds 2;
+                if (Get-Process -Id $excel_pid -ErrorAction SilentlyContinue) {
+                    Stop-Process -Id $excel_pid -Force
+                };
+            } finally {
+                if ($wb) { [System.Runtime.Interopservices.Marshal]::ReleaseComObject($wb) | Out-Null };
+                if ($excel) {
+                    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null;
+                    [System.GC]::Collect();
+                    [System.GC]::WaitForPendingFinalizers();
+                };
+            };';
+    };
+
     if ($partialCommand !== "") {
+        // replace the returns-to-line with spaces, to stop Windows's CMD from trunking the command
+        $cleanCommand = str_replace(["\r", "\n"], ' ', $partialCommand);
+        
         // wraps the partial command in a Windows-executable system command
-        $fullCommand = "powershell -ExecutionPolicy Bypass -Command \"$partialCommand\"";
+        $fullCommand = "powershell -ExecutionPolicy Bypass -Command \"$cleanCommand\" 2>&1"; // 2>&1 redirects STDERR to STDOUT, so that PowerShell system errors are received by PHP ($output only receives the data on STDOUT) ; help from AI
         
         $output = []; // resets the output
         exec($fullCommand, $output, $returnVar); // output = array that will receive everything PowerShell-related ; returnVar = outpput code (0 = success, other = error)
@@ -105,7 +156,7 @@ foreach ($files as $file) {
             logConversion($id, $file, 'SUCCESS');
         } else {
             $errorCount++;
-            $errorDetail = !empty($output) ? implode(" ", $output) : "Erreur PowerShell";
+            $errorDetail = !empty($output) ? implode(" ", $output) : "Erreur PowerShell"; // converts the content of the $output array into a string with implode(), or gives a generic error message if $output is empty
             logConversion($id, $file, 'ERROR', $errorDetail);
         }
     }
