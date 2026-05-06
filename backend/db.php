@@ -15,6 +15,10 @@ function getDb() {
     $dbPath = __DIR__ . '/../database/db.sqlite';
     $pdo = new PDO("sqlite:$dbPath");
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // sets the PDO to error reporting mode and configures it to throw PDOExceptions
+    
+    // activates support for foreign keys (deactivated by default in SQLite) ; suggestion from AI, checked in SQLite official doc
+    $pdo->exec("PRAGMA foreign_keys = ON;");
+
     return $pdo;
 };
 
@@ -78,4 +82,17 @@ function deleteFlow($id){
     $stmt = $pdo->prepare("DELETE FROM flows WHERE id = :id");
     $stmt->execute([':id' => $id]);
     return $stmt->rowCount() > 0; // confirms at least 1 row was affected by the DELETE
+};
+
+function getConversionByFlow($flowId) {
+    $pdo = getDb();
+    $stmt = $pdo->prepare("SELECT * FROM conversions WHERE flow_id = :fid ORDER BY converted_at DESC");
+    $stmt->execute([':fid' => $flowId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+};
+
+function logConversion($flowId, $filename, $status, $errorMsg = null) {
+    $pdo = getDb();
+    $stmt = $pdo->prepare("INSERT INTO conversions (flow_id, filename, status, error_msg) VALUES (:fid, :fname, :status, :msg)");
+    $stmt->execute([':fid' => $flowId, ':fname' => $filename, ':status' => $status, ':msg' => $errorMsg]);
 };

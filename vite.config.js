@@ -12,6 +12,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+      },
+      '/convert.php': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
       }
     }
   }
