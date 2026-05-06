@@ -40,25 +40,49 @@ $successCount = 0;
 $errorCount = 0;
 
 foreach ($files as $file) {
+    // ignores the folders . and .. returned by scandir()
+    if ($file === '.' || $file === '..') {
+        continue;
+    }
+    // checks the file is a file, and not a folder
+    $fullPath = $sourceDir . DIRECTORY_SEPARATOR . $file;
+    if (!is_file($fullPath)) {
+        continue;
+    }
+    // extract the file extension
     $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-    $inputPath = realPath($sourceDir . DIRECTORY_SEPARATOR . $file); // realPath : converts relative paths into absolute ones
-    if (!$inputPath) continue; // if a file is inaccessible, continue with the next one without crashing
+    // ensures it only works with docx and xlsx
+    $isDocx = ($extension === 'docx' && $flow['convert_docx']);
+    $isXlsx = ($extension === 'xlsx' && $flow['convert_xlsx']);
+    if (!$isDocx && !$isXlsx) {
+        continue;
+    }
+
+    $inputPath = realPath($fullPath); // realPath : converts relative paths into absolute ones
+    // if a file is inaccessible, logs the error in the PHP log and continues with the next one without crashing the app
+    if (!$inputPath) {
+        error_log("DocFlow Error: Impossible de résoudre le chemin absolu pour le fichier : " . $file);
+        continue; 
+    }
     $outputPath = $destDir . DIRECTORY_SEPARATOR . pathinfo($file, PATHINFO_FILENAME) . ".pdf";
+
+    // double the single ', to prevent security risk via injections
+    $safeInput = str_replace("'", "''", $inputPath); // uses str_replace() to escape the variable
+    $safeOutput = str_replace("'", "''", $outputPath);
 
     $partialCommand = "";
 
     // prepare the partial command depending on the extension
     // uses simple '' instead of double "", so that the $variables intented for PowerShell aren't interpreted by PHP
-    if ($extension === 'docx' && $flow['convert_docx']) {
+    if ($isDocx) {
         $partialCommand = '$word = New-Object -ComObject Word.Application; ' . // opens Word in the background
                      '$word.Visible = $false; ' . // ensures the app stays hidden in the background
-                     // double the single ', to rpevent security risk via injection
-                     '$doc = $word.Documents.Open(\'' . str_replace("'", "''", $inputPath) . '\'); ' . // uses str_replace() to escape the variable
-                     '$doc.ExportAsFixedFormat(\'' . str_replace("'", "''", $outputPath) . '\', 17); ' . // executes the conversion ; 17 = internal code for PDF format in Word
+                     '$doc = $word.Documents.Open(\'' . $safeInput . '\'); ' .
+                     '$doc.ExportAsFixedFormat(\'' . $safeOutput . '\', 17); ' . // executes the conversion ; 17 = internal code for PDF format in Word
                      '$doc.Close(0); ' . // closes Word after the conversion ; (0) doesn't save the changes, to avoid opening a contextual window
                      '$word.Quit();';
     }
-    elseif ($extension === 'xlsx' && $flow['convert_xlsx']) {
+    elseif ($isXlsx) {
         $partialCommand = '$excel = New-Object -ComObject Excel.Application; ' .
                      '$excel.Visible = $false; ' .
                      '$excel.DisplayAlerts = $false; ' . // avoids opening contextual windows
