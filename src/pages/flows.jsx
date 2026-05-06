@@ -36,6 +36,20 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
         fetchFlows(); // refreshes the list after a DELETE
     };
 
+    const handleExecuteFlow = async (id) => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/convert.php?id=${id}`);
+            const result = await res.json();
+            alert(`Conversion terminée ! Succès : ${result.success}, Erreurs : ${result.errors}`);
+            fetchFlows(); // refresh the list of Flows
+        } catch (err) {
+            console.error("Erreur lors de l'exécution du Flow : ", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     
     return (
         <div className="p-8">
@@ -102,7 +116,7 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
                                         <button className="bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-lg hover:bg-neutral-300 transition-colors text-sm" title="Détails">
                                             Voir détails
                                         </button>
-                                        <button className="flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exécuter">
+                                        <button onClick={() => handleExecuteFlow(flow.id)} className="flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exécuter">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                                             </svg>
