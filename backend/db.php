@@ -24,7 +24,15 @@ function getDb() {
 
 function getAllFlows() {
     $pdo = getDb();
-    $stmt = $pdo->query("SELECT * FROM flows"); // no parameter, so using query() is safe
+    // no parameter, so using query() is safe
+    $stmt = $pdo->query("
+    SELECT flows.*,
+    MAX(datetime(conversions.converted_at, 'localtime')) AS last_run,
+    COUNT(conversions.id) AS count
+    FROM flows
+    LEFT JOIN conversions ON flows.id = conversions.flow_id
+    GROUP BY flows.id
+    ");
     return $stmt->fetchAll(PDO::FETCH_ASSOC); // returns only the associative array
 };
 

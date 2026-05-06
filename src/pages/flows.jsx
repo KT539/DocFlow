@@ -107,7 +107,7 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
 
                                 <div className="flex justify-between items-center text-neutral-600 text-sm">
                                     <div className="flex gap-6 items-center">
-                                        <span>{flow.last_run || 'Jamais utilisé'}</span>
+                                        <span>{flow.last_run ? `${new Date(flow.last_run).toLocaleString('fr-CH')}` : 'Jamais utilisé'}</span> {/* uses toLocaleString to get the swiss date format ; suggestion from AI */}
                                         {/* uses the react short-circuit to display a string if true and 0 if false ; then filters out the false values and joins the true values */}
                                         <span>Types : {[flow.convert_docx && 'docx', flow.convert_xlsx && 'xlsx'].filter(Boolean).join(', ')}</span>
                                         <span>Conversions : {flow.count || 0}</span>
