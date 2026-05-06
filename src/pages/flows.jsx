@@ -41,7 +41,15 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
         try {
             const res = await fetch(`/convert.php?id=${id}`);
             const result = await res.json();
-            alert(`Conversion terminée ! Succès : ${result.success}, Erreurs : ${result.errors}`);
+
+            // dynamic message with the detailed result of the conversion
+            let message = `Conversion terminée !\n`;
+            message += `Succès : ${result.success}\n`;
+            message += `Erreurs : ${result.errors}\n`;
+            if (result.skipped > 0) {
+                message += `Fichiers ignorés (déjà à jour) : ${result.skipped}`;
+            }
+            alert(message);
             fetchFlows(); // refresh the list of Flows
         } catch (err) {
             console.error("Erreur lors de l'exécution du Flow : ", err);

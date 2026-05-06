@@ -38,6 +38,7 @@ if (!is_dir($sourceDir) || !is_dir($destDir)) {
 $files = scandir($sourceDir); // lists the content of the sourceDir
 $successCount = 0;
 $errorCount = 0;
+$skippedCount = 0;
 
 foreach ($files as $file) {
     // ignores the folders . and .. returned by scandir()
@@ -65,6 +66,14 @@ foreach ($files as $file) {
         continue; 
     }
     $outputPath = $destDir . DIRECTORY_SEPARATOR . pathinfo($file, PATHINFO_FILENAME) . ".pdf";
+
+    // checks if the pdf already exists in the destDir ; then checks its last modification date ; suggestion from AI
+    // if the docx/xlsx is more recent than the pdf, converts it and overwrites the pdf ; if not, stops the duplicated conversion
+    if (file_exists($outputPath)) {
+        if (filemtime($fullPath) <= filemtime($outputPath))
+        $skippedCount++;
+        continue;
+    }
 
     // double the single ', to prevent security risk via injections
     $safeInput = str_replace("'", "''", $inputPath); // uses str_replace() to escape the variable
@@ -162,4 +171,4 @@ foreach ($files as $file) {
     }
 }
 
-echo json_encode(['success' => $successCount, 'errors' => $errorCount]);
+echo json_encode(['success' => $successCount, 'errors' => $errorCount, 'skipped' => $skippedCount]);
