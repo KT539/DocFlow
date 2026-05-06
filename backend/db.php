@@ -15,6 +15,10 @@ function getDb() {
     $dbPath = __DIR__ . '/../database/db.sqlite';
     $pdo = new PDO("sqlite:$dbPath");
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // sets the PDO to error reporting mode and configures it to throw PDOExceptions
+    
+    // activates support for foreign keys (deactivated by default in SQLite) ; suggestion from AI, checked in SQLite official doc
+    $pdo->exec("PRAGMA foreign_keys = ON;");
+
     return $pdo;
 };
 
