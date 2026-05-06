@@ -1,6 +1,6 @@
 <?php
 /**
- * @file            backend/api/convert.php
+ * @file            backend/convert.php
  * @project         DocFlow
  * @author          Kilian Testard
  * @last_modified   05-05-2026
@@ -112,9 +112,3 @@ foreach ($files as $file) {
 }
 
 echo json_encode(['success' => $successCount, 'errors' => $errorCount]);
-
-function logConversion($flowId, $filename, $status, $errorMsg = null) {
-    $pdo = getDb();
-    $stmt = $pdo->prepare("INSERT INTO conversions (flow_id, filename, status, error_msg) VALUES (:fid, :fname, :status, :msg)");
-    $stmt->execute([':fid' => $flowId, ':fname' => $filename, ':status' => $status, ':msg' => $errorMsg]);
-}
