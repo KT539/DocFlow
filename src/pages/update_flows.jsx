@@ -67,7 +67,14 @@ export default function UpdateFlows({ setCurrentPage, flowId }) {
                 body: JSON.stringify(form) // turns the form (javascript object) into a string to be sent to the PHP API
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                throw new Error(data.error);
+            } else {
+                if (form.auto_trigger) {
+                    window.electronAPI.refreshWatchers();
+                }
+                setStatus('success');
+            }
             setStatus('success');
             setTimeout(() => setCurrentPage('flows'), 1500); // returns to main page after 1.5 seconds
         } catch (err) {

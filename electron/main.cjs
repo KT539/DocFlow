@@ -3,16 +3,18 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   04-05-2026
+ * @last_modified   07-05-2026
  */
 
 
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
+const chokidar = require('chokidar');
 
 
 let phpServer;
+let watchers = {};
 
 // launch PHP's integrated dev server on port 8000, directed to the backend/ folder
 function startPhpServer() {
@@ -54,11 +56,63 @@ ipcMain.handle('select-directory', async (event) => {
 });
 
 
+// written by me, but some help from AI to understand how chokidar works
+async function setupAutoTriggers() {
+  try {
+    const res = await fetch('/api/flows.php');
+    const flows = await res.json();
+    const autoFlows = Array.isArray(flows) ? flows.filter(f => f.auto_trigger === 1) : []; // if a flows array is returned, filter those with auto_trigger
+    
+    Object.values(watchers).forEach(w => w.close());
+    watchers = {};
+
+    autoFlows.forEach(flow => {
+      console.log(`Watching : ${flow.source_dir} for Flow : ${flow.name}`); // to be replaced by another log
+
+      const watcher = chokidar.watch(flow.source_dir, {
+        persistent: true,
+        ignoreInitial: true, // ignores the files that are already in the folder at launch
+        depth: 0, // only watches the root folder
+        awaitWriteFinish: true // ensures chokidar doesn't start processing a big file while it is still being copied ; suggesion from AI
+      });
+
+      watcher.on('add', (filePath) => {
+        const extension = path.extname(filePath).toLowerCase();
+        const isDocx = extension === '.docx' && flow.convert_docx;
+        const isXlsx = extension === '.xlsx' && flow.convert_xslx;
+        
+        if (isDocx || isXlsx) {
+          const fileName = path.basename(filePath);
+          console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // to be replaced by another log
+
+          // !! from AI, to be replaced !!
+          fetch(`/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`)
+            .then(res => res.json())
+            .then(data => console.log(`Auto-conversion terminée pour ${fileName}:`, data.status))
+            .catch(err => console.error(`Erreur auto-trigger pour ${fileName}:`, err));
+
+        }
+      });
+      watchers[flow.id] = watcher;
+    });
+  } catch (err) {
+    console.error("Erreur lors de l'initialisation des watchers:", err);
+  }
+};
+
+
 // triggers once electron is initialized
 app.whenReady().then(() => {
   execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db initialization is complete
   startPhpServer();
+  setTimeout(setupAutoTriggers, 1000); // timeout to be sure the PHP server is ready before loading the watchers
   createWindow();
+});
+
+// listens to the renderer process in case the watchers are refreshed (user creating/modifiying an auto Flow)
+ipcMain.on('refresh-watchers', () => {
+  console.log("Refresh des watchers..."); // to be replaced by another log
+  setupAutoTriggers(); // loads the watchers again in case of a refresh
 });
 
 // triggers when all windows are closed

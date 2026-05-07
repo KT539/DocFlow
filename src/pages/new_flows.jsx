@@ -45,7 +45,14 @@ export default function NewFlows({ setCurrentPage }) {
                 body: JSON.stringify(form) // turns the form (javascript object) into a string to be sent to the PHP API
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                throw new Error(data.error);
+            } else {
+                if (form.auto_trigger) {
+                    window.electronAPI.refreshWatchers();
+                }
+                setStatus('sucess');
+            }
             setStatus('success');
             setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true }); // resets the form
             setTimeout(() => setCurrentPage('flows'), 1500); // returns to main page after 1.5 seconds
