@@ -3,7 +3,7 @@
  * @file            backend/convert.php
  * @project         DocFlow
  * @author          Kilian Testard
- * @last_modified   05-05-2026
+ * @last_modified   06-05-2026
  */
 
 // the whole conversion script was written by myself, but with help from AI, specially the commands themselves
@@ -18,6 +18,9 @@ if (!$id) {
     echo json_encode(['error' => 'ID du Flow manquant']);
     exit;
 };
+// get a specific filename
+$filename = $_GET['filename'] ?? null;
+
 
 // gets the Flow
 $flow = getFlow($id);
@@ -34,11 +37,17 @@ if (!is_dir($sourceDir) || !is_dir($destDir)) {
     exit;
 };
 
+if ($filename) {
+    $files = [$filename]; // if a filename is received, only processes that file
+} else {
+    $files = scandir($sourceDir); // if not, then lists the content of the sourceDir
+};
 
-$files = scandir($sourceDir); // lists the content of the sourceDir
 $successCount = 0;
 $errorCount = 0;
 $skippedCount = 0;
+$lastStatus = 'SKIPPED';
+
 
 foreach ($files as $file) {
     // ignores the folders . and .. returned by scandir()
@@ -69,9 +78,9 @@ foreach ($files as $file) {
 
     // checks if the pdf already exists in the destDir ; then checks its last modification date ; suggestion from AI
     // if the docx/xlsx is more recent than the pdf, converts it and overwrites the pdf ; if not, stops the duplicated conversion
-    if (file_exists($outputPath)) {
-        if (filemtime($fullPath) <= filemtime($outputPath))
+    if (file_exists($outputPath) && filemtime($fullPath) <= filemtime($outputPath)) {
         $skippedCount++;
+        $lastStatus = 'SKIPPED';
         continue;
     }
 
@@ -162,13 +171,19 @@ foreach ($files as $file) {
         // with every iteration, insert a new row in the conversions table of the db
         if ($returnVar === 0) {
             $successCount++;
+            $lastStatus = 'SUCCESS';
             logConversion($id, $file, 'SUCCESS');
         } else {
             $errorCount++;
+            $lastStatus = 'ERROR';
             $errorDetail = !empty($output) ? implode(" ", $output) : "Erreur PowerShell"; // converts the content of the $output array into a string with implode(), or gives a generic error message if $output is empty
             logConversion($id, $file, 'ERROR', $errorDetail);
         }
     }
 }
 
-echo json_encode(['success' => $successCount, 'errors' => $errorCount, 'skipped' => $skippedCount]);
+if ($filename) {
+    echo json_encode(['status' => $lastStatus, 'file' => $filename]);
+} else {
+    echo json_encode(['success' => $successCount, 'errors' => $errorCount, 'skipped' => $skippedCount]);
+}

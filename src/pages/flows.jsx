@@ -3,15 +3,17 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   04-05-2026
+ * @last_modified   06-05-2026
  */
 
 
 import { useState, useEffect } from 'react';
+import ModalProgress from '../components/ModalProgress';
 
 export default function Flows({ setCurrentPage, setSelectedFlowId }) {
     const [flows, setFlows] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [executingFlowId, setExecutingFlowId] = useState(null);
 
     
     const fetchFlows = async () => {
@@ -36,26 +38,8 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
         fetchFlows(); // refreshes the list after a DELETE
     };
 
-    const handleExecuteFlow = async (id) => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/convert.php?id=${id}`);
-            const result = await res.json();
-
-            // dynamic message with the detailed result of the conversion
-            let message = `Conversion terminée !\n`;
-            message += `Succès : ${result.success}\n`;
-            message += `Erreurs : ${result.errors}\n`;
-            if (result.skipped > 0) {
-                message += `Fichiers ignorés (déjà à jour) : ${result.skipped}`;
-            }
-            alert(message);
-            fetchFlows(); // refresh the list of Flows
-        } catch (err) {
-            console.error("Erreur lors de l'exécution du Flow : ", err);
-        } finally {
-            setLoading(false);
-        }
+    const handleExecuteFlow = (id) => {
+        setExecutingFlowId(id); // changes the state of executingFlowId, opening the modal
     };
 
     
@@ -137,6 +121,13 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
                         </div>
                     ))}
                 </div>
+            )}
+            {/* progression modal */}
+            {executingFlowId && (
+                <ModalProgress
+                    flowId={executingFlowId}
+                    onClose={() => { setExecutingFlowId(null); fetchFlows(); }} // onClose() resets the executingFlowId state, and fetches the Flows
+                />
             )}
         </div>
     );
