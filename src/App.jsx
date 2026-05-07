@@ -12,6 +12,7 @@ import Nav from './nav.jsx';
 import Flows from './pages/flows.jsx';
 import NewFlows from './pages/new_flows.jsx';
 import UpdateFlows from './pages/update_flows.jsx';
+import FlowHistory from './pages/history.jsx';
 import Settings from './pages/settings.jsx';
 
 
@@ -26,6 +27,7 @@ export default function App() {
       case 'flows': return <Flows setCurrentPage={setCurrentPage} setSelectedFlowId={setSelectedFlowId} />; // gives props to my components
       case 'new_flows': return <NewFlows setCurrentPage={setCurrentPage} />; 
       case 'update_flows': return <UpdateFlows setCurrentPage={setCurrentPage} flowId={selectedFlowId} />
+      case 'history': return <FlowHistory flowId={selectedFlowId} setCurrentPage={setCurrentPage} />;
       case 'settings': return <Settings />;
       default: return <Flows />;
     }

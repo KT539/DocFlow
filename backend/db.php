@@ -94,7 +94,7 @@ function deleteFlow($id){
 
 function getConversionByFlow($flowId) {
     $pdo = getDb();
-    $stmt = $pdo->prepare("SELECT * FROM conversions WHERE flow_id = :fid ORDER BY converted_at DESC");
+    $stmt = $pdo->prepare("SELECT conversions.*, datetime(converted_at, 'localtime') AS converted_at FROM conversions WHERE flow_id = :fid ORDER BY converted_at DESC");
     $stmt->execute([':fid' => $flowId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 };

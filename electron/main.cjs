@@ -27,6 +27,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1300,
     height: 800,
+    minWidth: 1000, // sets up a minimal width and height
+    minHeight: 600,
     webPreferences: {
       nodeIntegration: false, // disables the renderer's direct access to Node.js
       contextIsolation: true, // isolates the renderer for better security
@@ -34,6 +36,7 @@ function createWindow() {
     }
   });
 
+  win.removeMenu();
   win.loadURL('http://localhost:5173'); // loads the React app served by Vite
 };
 

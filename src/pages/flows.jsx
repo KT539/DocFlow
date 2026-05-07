@@ -29,7 +29,7 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
         }
     };
 
-    useEffect(() => { fetchFlows(); }, []); // empty array of dependencies --> the instruction is executed a single time, just after th first rendering
+    useEffect(() => { fetchFlows(); }, []); // empty array of dependencies --> the instruction is executed a single time, just after the first rendering
 
     // deletes a flow after confirmation
     const handleDelete = async (id) => {
@@ -63,7 +63,7 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
                                 <div className="flex justify-between items-center mb-3">
                                     <div className="flex items-center gap-3">
                                         <h2 className="text-xl font-semibold text-neutral-700">{flow.name}</h2>
-                                        {/* SQLite has no native BOOLEAN type and stores the value as 0/1 ; if a 1 or 0 value is specified, the short-circuit would display either the <span> or a 0 */}
+                                        {/* SQLite has no native BOOLEAN type and stores the value as 0/1 ; if a 1 or 0 value isn't specified, the short-circuit would display either the <span> or a 0 */}
                                         {flow.auto_trigger === 1 && (
                                             <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-medium border border-blue-200">
                                                 Auto
@@ -105,7 +105,11 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
                                         <span>Conversions : {flow.count || 0}</span>
                                     </div>
                                     <div className="flex gap-3">
-                                        <button className="bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-lg hover:bg-neutral-300 transition-colors text-sm" title="Détails">
+                                        <button
+                                            onClick={() => { 
+                                                setSelectedFlowId(flow.id); 
+                                                setCurrentPage('history'); }}
+                                            className="bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-lg hover:bg-neutral-300 transition-colors text-sm" title="Détails">
                                             Voir détails
                                         </button>
                                         <button onClick={() => handleExecuteFlow(flow.id)} className="flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exécuter">
