@@ -56,6 +56,27 @@ ipcMain.handle('select-directory', async (event) => {
 });
 
 
+// checks the user's environment before launching
+function checkEnvironment() {
+  if (process.platform !== 'win32') {
+      dialog.showErrorBox('Système non supporté', 'DocFlow ne fonctionne que sur Windows.');
+      app.quit();
+      return false;
+  }
+
+  try {
+      // tries to get the location of the Word/Excel executable in he registry ; !! from AI !!
+      execSync('reg query "HKEY_CLASSES_ROOT\\Word.Application"');
+      execSync('reg query "HKEY_CLASSES_ROOT\\Excel.Application"');
+      return true;
+  } catch (err) {
+      dialog.showErrorBox('Microsoft Office introuvable', 'DocFlow a besoin de Word et de Excel pour fonctionner. Veuillez installer Office et réessayer.');
+      app.quit();
+      return false;
+  }
+}
+
+
 // written by me, but with some help from AI to understand how chokidar works
 async function setupAutoTriggers() {
   try {
@@ -108,10 +129,17 @@ async function setupAutoTriggers() {
 
 // triggers once electron is initialized
 app.whenReady().then(() => {
-  execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db initialization is complete
-  startPhpServer();
-  setTimeout(setupAutoTriggers, 1000); // timeout to be sure the PHP server is ready before loading the watchers, suggestion from AI
-  createWindow();
+  if (!checkEnvironment()) { // checks the user's environment first
+    return;
+  }
+  try {
+    execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db initialization is complete
+    startPhpServer();
+    setTimeout(setupAutoTriggers, 1000); // timeout to be sure the PHP server is ready before loading the watchers, suggestion from AI
+    createWindow();
+  } catch (err) {
+    console.error("Erreur d'initialisation : ", err); // for dev purposes
+  }
 });
 
 // listens to the renderer process in case the watchers are refreshed (user creating/modifiying an auto Flow)
