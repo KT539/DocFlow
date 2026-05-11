@@ -59,44 +59,49 @@ ipcMain.handle('select-directory', async (event) => {
 // written by me, but with some help from AI to understand how chokidar works
 async function setupAutoTriggers() {
   try {
-    const res = await fetch(`http://localhost:8000/api/flows.php`);
+    const res = await fetch(`http://localhost:8000/api/flows.php`); // gets the flows
     const flows = await res.json();
     const autoFlows = Array.isArray(flows) ? flows.filter(f => f.auto_trigger === 1) : []; // if a flows array is returned, filter those with auto_trigger
     
-    Object.values(watchers).forEach(w => w.close());
-    watchers = {};
+    // used an object instead of an array an AI's suggestion
+    Object.values(watchers).forEach(w => w.close()); // closes any instance of the watchers object, to make sure two instances don't overlap on the same folder in case of flow modification
+    watchers = {}; // then resets the object
 
     autoFlows.forEach(flow => {
-      console.log(`Watching : ${flow.source_dir} for Flow : ${flow.name}`); // to be replaced by another log
+      console.log(`Watching : ${flow.source_dir} for Flow : ${flow.name}`); // for dev purposes
 
-      const watcher = chokidar.watch(flow.source_dir, {
-        persistent: true,
+      const watcher = chokidar.watch(flow.source_dir, { // for each flow, chokidar watches the source dir
+        persistent: true, // keeps running as long as the app is running
         ignoreInitial: true, // ignores the files that are already in the folder at launch
         depth: 0, // only watches the root folder
         awaitWriteFinish: true // ensures chokidar doesn't start processing a big file while it is still being copied ; suggesion from AI
       });
 
-      watcher.on('add', (filePath) => {
+      watcher.on('add', async (filePath) => { // triggers on the 'add' event, whenever a file is added to the folder
+        // uses path.extname() method to get the new file's extension and check if the file format is valid + activated in the flow
         const extension = path.extname(filePath).toLowerCase();
         const isDocx = extension === '.docx' && flow.convert_docx;
-        const isXlsx = extension === '.xlsx' && flow.convert_xslx;
+        const isXlsx = extension === '.xlsx' && flow.convert_xlsx;
         
+        // uses the path-basename() method to get the new file's name
         if (isDocx || isXlsx) {
           const fileName = path.basename(filePath);
-          console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // to be replaced by another log
+          console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // for dev purposes
 
-          // !! from AI, to be replaced !!
-          fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`)
-            .then(res => res.json())
-            .then(data => console.log(`Auto-conversion terminée pour ${fileName}:`, data.status))
-            .catch(err => console.error(`Erreur auto-trigger pour ${fileName}:`, err));
-
+          try {
+            // calls the conversion script with the flow_id and the filename as parameters
+            const response = await fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`); // encodeURIComponent in case of special characters in the url
+            const data = await response.json();
+            console.log(`Auto-conversion terminée pour ${fileName} :`, data.status); // for dev purposes
+          } catch (err) {
+            console.error(`Erreur d'auto-conversion pour ${fileName} :`, err); // for dev purposes
+          }
         }
       });
-      watchers[flow.id] = watcher;
+      watchers[flow.id] = watcher; // stores the watcher in the watchers object, with its flow_id as the key
     });
   } catch (err) {
-    console.error("Erreur lors de l'initialisation des watchers:", err);
+    console.error("Erreur lors de l'initialisation des watchers:", err); // for dev purposes
   }
 };
 
@@ -105,7 +110,7 @@ async function setupAutoTriggers() {
 app.whenReady().then(() => {
   execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db initialization is complete
   startPhpServer();
-  setTimeout(setupAutoTriggers, 1000); // timeout to be sure the PHP server is ready before loading the watchers
+  setTimeout(setupAutoTriggers, 1000); // timeout to be sure the PHP server is ready before loading the watchers, suggestion from AI
   createWindow();
 });
 
