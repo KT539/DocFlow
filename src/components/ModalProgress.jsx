@@ -128,13 +128,15 @@ export default function ModalProgress({ flowId, onClose }) {
                     </div>
                 </div>
                 <div className="p-4 bg-neutral-50 flex justify-between items-center gap-3">
-                    {/* cancel button is only visible during the conversion */}
-                    {!isFinished && !isCancelled && (
-                        <button onClick={handleCancel}
-                        className="px-6 py-2 rounded-lg font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
-                            Annuler
-                        </button>
-                    )}
+                    <div>   
+                        {/* cancel button is only visible during the conversion */}
+                        {!isFinished && !isCancelled && (
+                            <button onClick={handleCancel}
+                            className="px-6 py-2 rounded-lg font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
+                                Annuler
+                            </button>
+                        )}
+                    </div>
                     {/* disables the button if the conversion isn't finished */}
                     <button 
                         onClick={onClose}
