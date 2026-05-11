@@ -3,7 +3,7 @@
  * @file            backend/convert.php
  * @project         DocFlow
  * @author          Kilian Testard
- * @last_modified   06-05-2026
+ * @last_modified   11-05-2026
  */
 
 // the whole conversion script was written by myself, but with help from AI, specially the commands themselves
@@ -40,11 +40,7 @@ if (!is_dir($sourceDir) || !is_dir($destDir)) {
     exit;
 };
 
-if ($filename) {
-    $files = [$filename]; // if a filename is received, only processes that file
-} else {
-    $files = scandir($sourceDir); // if not, then lists the content of the sourceDir
-};
+$files = $filename ? [$filename] : scandir($sourceDir); // processes either the content of the source dir or a single file if a filname is received
 
 $successCount = 0;
 $errorCount = 0;
@@ -57,16 +53,19 @@ foreach ($files as $file) {
     if ($file === '.' || $file === '..' || str_starts_with($file, '~$')) {
         continue;
     }
+
     // checks the file is a file, and not a folder
     $fullPath = $sourceDir . DIRECTORY_SEPARATOR . $file;
     if (!is_file($fullPath)) {
         continue;
     }
+
     // extract the file extension
     $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
     // ensures it only works with docx and xlsx
     $isDocx = ($extension === 'docx' && $flow['convert_docx']);
     $isXlsx = ($extension === 'xlsx' && $flow['convert_xlsx']);
+
     if (!$isDocx && !$isXlsx) {
         continue;
     }
@@ -77,6 +76,7 @@ foreach ($files as $file) {
         error_log("DocFlow Error: Impossible de résoudre le chemin absolu pour le fichier : " . $file);
         continue; 
     }
+
     $outputPath = $destDir . DIRECTORY_SEPARATOR . pathinfo($file, PATHINFO_FILENAME) . ".pdf";
 
     // checks if the pdf already exists in the destDir ; then checks its last modification date ; suggestion from AI
@@ -91,17 +91,18 @@ foreach ($files as $file) {
     // double the single ', to prevent security risk via injections
     $safeInput = str_replace("'", "''", $inputPath); // uses str_replace() to escape the variable
     $safeOutput = str_replace("'", "''", $outputPath);
-
     $partialCommand = "";
 
     // prepare the partial command depending on the extension
     // uses simple '' instead of double "", so that the $variables intended for PowerShell aren't interpreted by PHP
     
     /*  
+        Both PowerShell commands were written with heavy help from AI
         New-Object opens Word in the background ;
         Get-Process gets the process's ID, so it can be killed later ; !! from AI !! ;
         $word.Visible = $false ensures Word remains hidden in the background and runs in "non-interactive mode" ;
         $ DisplayAlerts = 0 turns off pop-up windows
+        opens the documents in Read-only
         17 is the internal code for PDF format in Word ; 
         .Close(0) closes Word without saving the changes, to avoid opening a contextual window
         the finally block frees the COM object, and cleans up the RAM, and then forces a kill on the process if it is still openend ; !! from AI !! ;
@@ -114,7 +115,7 @@ foreach ($files as $file) {
                 $word_pid = (Get-Process -Name "Winword" | Where-Object { $_.MainWindowHandle -eq 0 } | Sort-Object -Descending | Select-Object -ExpandProperty Id -First 1);
                 $word.Visible = $false;
                 $word.DisplayAlerts = 0;
-                $doc = $word.Documents.Open(\'' . $safeInput . '\');
+                $doc = $word.Documents.Open(\'' . $safeInput . '\', $false, $true);
                 $doc.ExportAsFixedFormat(\'' . $safeOutput . '\', 17);
                 $doc.Close(0);
                 $word.Quit();
@@ -145,7 +146,7 @@ foreach ($files as $file) {
                 $excel_pid = (Get-Process -Name "Excel" | Where-Object { $_.MainWindowHandle -eq 0 } | Sort-Object -Descending | Select-Object -ExpandProperty Id -First 1);
                 $excel.Visible = $false;
                 $excel.DisplayAlerts = $false;
-                $wb = $excel.Workbooks.Open(\'' . $safeInput . '\');
+                $wb = $excel.Workbooks.Open(\'' . $safeInput . '\', 0, $true);
                 $wb.ExportAsFixedFormat(0, \'' . $safeOutput . '\');
                 $wb.Close($false);
                 $excel.Quit();
@@ -166,26 +167,68 @@ foreach ($files as $file) {
     if ($partialCommand !== "") {
         // replace the returns-to-line with spaces, to stop Windows's CMD from trunking the command
         $cleanCommand = str_replace(["\r", "\n"], ' ', $partialCommand);
-        
         // wraps the partial command in a Windows-executable system command
         $fullCommand = "powershell -ExecutionPolicy Bypass -Command \"$cleanCommand\" 2>&1"; // 2>&1 redirects STDERR to STDOUT, so that PowerShell system errors are received by PHP ($output only receives the data on STDOUT) ; help from AI
-        
-        $output = []; // resets the output
-        exec($fullCommand, $output, $returnVar); // output = array that will receive everything PowerShell-related ; returnVar = outpput code (0 = success, other = error)
 
-        // with every iteration, insert a new row in the conversions table of the db
-        if ($returnVar === 0) {
-            $successCount++;
-            $lastStatus = 'SUCCESS';
-            logConversion($id, $file, 'SUCCESS', null, $triggerType);
-        } else {
-            $errorCount++;
-            $lastStatus = 'ERROR';
-            $errorDetail = !empty($output) ? implode(" ", $output) : "Erreur PowerShell"; // converts the content of the $output array into a string with implode(), or gives a generic error message if $output is empty
-            logConversion($id, $file, 'ERROR', $errorDetail, $triggerType);
+        // configures the descriptors (stdin = 0, stdout = 1, stderr = 3) ; !! from AI !!
+        $descriptorspec = [
+            0 => ["pipe", "r"], // PHP writes, PS reads
+            1 => ["pipe", "w"], // PS writes, PHP reads
+            2 => ["pipe", "w"] // PS writes, PHP reads
+        ];
+
+        // switched from exec() to proc_open() on AI suggestion, in order to set up a timeout
+        $process = proc_open($fullCommand, $descriptorspec, $pipes);
+
+        if (is_resource($process)) {
+            $isTimeout = false;
+            $timeout = 30;
+            $startTime = time();
+
+            while (true) {
+                $status = proc_get_status($process); // gets status-related info in real time
+                if (!$status['running']) { // if the process is no longer running, breaks the loop
+                    break;
+                }
+
+                if ((time() - $startTime) > $timeout) { // checks if the timeout is reached
+                    $isTimeout = true;
+                    exec("taskkill /F /T /PID " . $status['pid']); // forced cleanup /Force /Tree : kills the PS process and its sub-processes like Word/Excel ; !! from AI !!
+                    break;
+                }
+                usleep(100000); // wait 0.1 second before checking again, to stop CPU overloads
+            }
+
+            $stdout = stream_get_contents($pipes[1]); // reads the info in the output pipe
+            $stderr = stream_get_contents($pipes[2]);
+
+            foreach ($pipes as $pipe) { 
+                fclose($pipe); // closes the pipes
+            }
+            $returnVar = proc_close($process); // defines returnVar with the PS exit code
+
+            if ($isTimeout) {
+                $errorCount++;
+                $lastStatus = 'ERROR';
+                $errorDetail = "Timeout : La conversion a pris trop de temps (fichier bloqué ou trop lourd).";
+                logConversion($id, $file, 'ERROR', $errorDetail, $triggerType);
+                continue;
+            }
+
+            // with every iteration, insert a new row in the conversions table of the db
+            if ($returnVar === 0) { // returnVar = output code (0 = success, other = error)
+                $successCount++;
+                $lastStatus = 'SUCCESS';
+                logConversion($id, $file, 'SUCCESS', null, $triggerType);
+            } else {
+                $errorCount++;
+                $lastStatus = 'ERROR';
+                $errorDetail = !empty($stdout) ? trim($stdout) : "Erreur PowerShell"; // converts the content of the $output array into a string with implode(), or gives a generic error message if $output is empty
+                logConversion($id, $file, 'ERROR', $errorDetail, $triggerType);
+            }
         }
     }
-}
+};
 
 if ($filename) {
     echo json_encode(['status' => $lastStatus, 'file' => $filename]);
