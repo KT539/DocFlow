@@ -14,5 +14,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // contextBridge allows to create window.electronAPI objects, making them accessible from the renderer without exposing ipcRenderer itself
 contextBridge.exposeInMainWorld('electronAPI', {
-    selectDirectory: () => ipcRenderer.invoke('select-directory')
+    selectDirectory: () => ipcRenderer.invoke('select-directory'),
+    refreshWatchers: () => ipcRenderer.send('refresh-watchers') // uses .send() instead of .invoke(), as the renderer doesn't need an answer from the main process
 });

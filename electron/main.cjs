@@ -3,16 +3,18 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   04-05-2026
+ * @last_modified   07-05-2026
  */
 
 
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
+const chokidar = require('chokidar');
 
 
 let phpServer;
+let watchers = {};
 
 // launch PHP's integrated dev server on port 8000, directed to the backend/ folder
 function startPhpServer() {
@@ -54,11 +56,68 @@ ipcMain.handle('select-directory', async (event) => {
 });
 
 
+// written by me, but with some help from AI to understand how chokidar works
+async function setupAutoTriggers() {
+  try {
+    const res = await fetch(`http://localhost:8000/api/flows.php`); // gets the flows
+    const flows = await res.json();
+    const autoFlows = Array.isArray(flows) ? flows.filter(f => f.auto_trigger === 1) : []; // if a flows array is returned, filter those with auto_trigger
+    
+    // used an object instead of an array an AI's suggestion
+    Object.values(watchers).forEach(w => w.close()); // closes any instance of the watchers object, to make sure two instances don't overlap on the same folder in case of flow modification
+    watchers = {}; // then resets the object
+
+    autoFlows.forEach(flow => {
+      console.log(`Watching : ${flow.source_dir} for Flow : ${flow.name}`); // for dev purposes
+
+      const watcher = chokidar.watch(flow.source_dir, { // for each flow, chokidar watches the source dir
+        persistent: true, // keeps running as long as the app is running
+        ignoreInitial: true, // ignores the files that are already in the folder at launch
+        depth: 0, // only watches the root folder
+        awaitWriteFinish: true // ensures chokidar doesn't start processing a big file while it is still being copied ; suggesion from AI
+      });
+
+      watcher.on('add', async (filePath) => { // triggers on the 'add' event, whenever a file is added to the folder
+        // uses path.extname() method to get the new file's extension and check if the file format is valid + activated in the flow
+        const extension = path.extname(filePath).toLowerCase();
+        const isDocx = extension === '.docx' && flow.convert_docx;
+        const isXlsx = extension === '.xlsx' && flow.convert_xlsx;
+        
+        // uses the path-basename() method to get the new file's name
+        if (isDocx || isXlsx) {
+          const fileName = path.basename(filePath);
+          console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // for dev purposes
+
+          try {
+            // calls the conversion script with the flow_id and the filename as parameters
+            const response = await fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`); // encodeURIComponent in case of special characters in the url
+            const data = await response.json();
+            console.log(`Auto-conversion terminée pour ${fileName} :`, data.status); // for dev purposes
+          } catch (err) {
+            console.error(`Erreur d'auto-conversion pour ${fileName} :`, err); // for dev purposes
+          }
+        }
+      });
+      watchers[flow.id] = watcher; // stores the watcher in the watchers object, with its flow_id as the key
+    });
+  } catch (err) {
+    console.error("Erreur lors de l'initialisation des watchers:", err); // for dev purposes
+  }
+};
+
+
 // triggers once electron is initialized
 app.whenReady().then(() => {
   execSync(`php ${path.join(__dirname, '../backend/db_init.php')}`); // execSync blocks the execution until the db initialization is complete
   startPhpServer();
+  setTimeout(setupAutoTriggers, 1000); // timeout to be sure the PHP server is ready before loading the watchers, suggestion from AI
   createWindow();
+});
+
+// listens to the renderer process in case the watchers are refreshed (user creating/modifiying an auto Flow)
+ipcMain.on('refresh-watchers', () => {
+  console.log("Refresh des watchers..."); // to be replaced by another log
+  setupAutoTriggers(); // loads the watchers again in case of a refresh
 });
 
 // triggers when all windows are closed
