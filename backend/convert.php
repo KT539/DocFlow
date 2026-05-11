@@ -103,24 +103,20 @@ foreach ($files as $file) {
         $word.Visible = $false ensures Word remains hidden in the background and runs in "non-interactive mode" ;
         17 is the internal code for PDF format in Word ; 
         .Close(0) closes Word without saving the changes, to avoid opening a contextual window
-        the Start-Sleep block forces a kill on the process if it is still silently running after 2 seconds ; !! from AI !! ;
-        the finally block frees the COM object by force, and cleans up the RAM ; !! from AI !! ;
+        the finally block frees the COM object, and cleans up the RAM, and then forces a kill on the process if it is still openend ; !! from AI !! ;
     */
 
     if ($isDocx) {
         $partialCommand = '
             try {
                 $word = New-Object -ComObject Word.Application;
-                $word_pid = (Get-Process -Name "Winword" | Select-Object -ExpandProperty Id | Sort-Object -Descending)[0];
+                $word_pid = (Get-Process -Name "Winword" | Where-Object { $_.MainWindowHandle -eq 0 } | Sort-Object -Descending | Select-Object -ExpandProperty Id -First 1);
                 $word.Visible = $false;
                 $doc = $word.Documents.Open(\'' . $safeInput . '\');
                 $doc.ExportAsFixedFormat(\'' . $safeOutput . '\', 17);
                 $doc.Close(0);
                 $word.Quit();
                 Start-Sleep -Seconds 2;
-                if (Get-Process -Id $word_pid -ErrorAction SilentlyContinue) {
-                    Stop-Process -Id $word_pid -Force
-                };
             } finally {
                 if ($doc) { [System.Runtime.Interopservices.Marshal]::ReleaseComObject($doc) | Out-Null };
                 if ($word) {
@@ -128,6 +124,9 @@ foreach ($files as $file) {
                     [System.GC]::Collect();
                     [System.GC]::WaitForPendingFinalizers();
                 };
+                if ($word_pid -and (Get-Process -Id $word_pid -ErrorAction SilentlyContinue)) {
+                    Stop-Process -Id $word_pid -Force -ErrorAction SilentlyContinue;
+                }
             };';
     }
 
@@ -141,7 +140,7 @@ foreach ($files as $file) {
         $partialCommand = '
             try {
                 $excel = New-Object -ComObject Excel.Application;
-                $excel_pid = (Get-Process -Name "Excel" | Select-Object -ExpandProperty Id | Sort-Object -Descending)[0];
+                $excel_pid = (Get-Process -Name "Excel" | Where-Object { $_.MainWindowHandle -eq 0 } | Sort-Object -Descending | Select-Object -ExpandProperty Id -First 1);
                 $excel.Visible = $false;
                 $excel.DisplayAlerts = $false;
                 $wb = $excel.Workbooks.Open(\'' . $safeInput . '\');
@@ -149,9 +148,6 @@ foreach ($files as $file) {
                 $wb.Close($false);
                 $excel.Quit();
                 Start-Sleep -Seconds 2;
-                if (Get-Process -Id $excel_pid -ErrorAction SilentlyContinue) {
-                    Stop-Process -Id $excel_pid -Force
-                };
             } finally {
                 if ($wb) { [System.Runtime.Interopservices.Marshal]::ReleaseComObject($wb) | Out-Null };
                 if ($excel) {
@@ -159,6 +155,9 @@ foreach ($files as $file) {
                     [System.GC]::Collect();
                     [System.GC]::WaitForPendingFinalizers();
                 };
+                if ($excel_pid -and (Get-Process -Id $excel_pid -ErrorAction SilentlyContinue)) {
+                    Stop-Process -Id $excel_pid -Force -ErrorAction SilentlyContinue;
+                }
             };';
     };
 
