@@ -56,10 +56,10 @@ ipcMain.handle('select-directory', async (event) => {
 });
 
 
-// written by me, but some help from AI to understand how chokidar works
+// written by me, but with some help from AI to understand how chokidar works
 async function setupAutoTriggers() {
   try {
-    const res = await fetch('/api/flows.php');
+    const res = await fetch(`http://localhost:8000/api/flows.php`);
     const flows = await res.json();
     const autoFlows = Array.isArray(flows) ? flows.filter(f => f.auto_trigger === 1) : []; // if a flows array is returned, filter those with auto_trigger
     
@@ -86,7 +86,7 @@ async function setupAutoTriggers() {
           console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // to be replaced by another log
 
           // !! from AI, to be replaced !!
-          fetch(`/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`)
+          fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`)
             .then(res => res.json())
             .then(data => console.log(`Auto-conversion terminée pour ${fileName}:`, data.status))
             .catch(err => console.error(`Erreur auto-trigger pour ${fileName}:`, err));

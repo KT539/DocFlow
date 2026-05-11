@@ -47,13 +47,13 @@ export default function NewFlows({ setCurrentPage }) {
             const data = await res.json();
             if (!res.ok) {
                 throw new Error(data.error);
-            } else {
-                if (form.auto_trigger) {
-                    window.electronAPI.refreshWatchers();
-                }
-                setStatus('sucess');
+            }
+            // refreshes the watchers
+            if (window.electronAPI && window.electronAPI.refreshWatchers) {
+                window.electronAPI.refreshWatchers();
             }
             setStatus('success');
+
             setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true }); // resets the form
             setTimeout(() => setCurrentPage('flows'), 1500); // returns to main page after 1.5 seconds
         } catch (err) {

@@ -69,13 +69,13 @@ export default function UpdateFlows({ setCurrentPage, flowId }) {
             const data = await res.json();
             if (!res.ok) {
                 throw new Error(data.error);
-            } else {
-                if (form.auto_trigger) {
-                    window.electronAPI.refreshWatchers();
-                }
-                setStatus('success');
+            }
+            // refreshes the watchers
+            if (window.electronAPI && window.electronAPI.refreshWatchers) {
+                window.electronAPI.refreshWatchers();
             }
             setStatus('success');
+
             setTimeout(() => setCurrentPage('flows'), 1500); // returns to main page after 1.5 seconds
         } catch (err) {
             setStatus('error');
