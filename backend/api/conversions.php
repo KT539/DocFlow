@@ -24,7 +24,7 @@ if ($method === 'GET') {
         echo json_encode(['error' => 'ID du Flow requis']);
         exit;
     }
-    echo json_encode(getConversionByFlow($flowId));
+    echo json_encode(getConversionByFlow($flowId), JSON_INVALID_UTF8_SUBSTITUTE); // ensures JSON validation between PHP and PowerShell ; !! from AI !!
 } else {
     http_response_code(405);
     echo json_encode(['error' => 'Méthode non autorisée']);

@@ -115,7 +115,7 @@ export default function FlowHistory({ flowId, setCurrentPage }) {
                             <div 
                                 key={conv.id} 
                                 className={`p-4 rounded-lg border flex flex-col gap-2 ${
-                                    conv.status === 'SUCCESS' ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'
+                                    conv.status === 'SUCCESS' ? 'bg-green-50/50 border-green-100' : conv.status === 'SKIPPED' ? 'bg-neutral-50/50 border-neutral-100' : 'bg-red-50/50 border-red-100'
                                 }`}>
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-3">
@@ -123,12 +123,19 @@ export default function FlowHistory({ flowId, setCurrentPage }) {
                                             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
+                                        ) : conv.status === 'SKIPPED' ? (
+                                            <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6L14.6 7.2A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+                                            </svg>
                                         ) : (
                                             <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         )}
                                         <span className="font-semibold text-neutral-700">{conv.filename}</span>
+                                        {conv.trigger_type === 'AUTO' && (
+                                            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-medium border border-blue-200">{conv.trigger_type}</span>
+                                        )}
                                     </div>
                                     <span className="text-sm text-neutral-500">
                                         {new Date(conv.converted_at).toLocaleString('fr-CH')}

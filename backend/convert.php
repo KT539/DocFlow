@@ -18,9 +18,12 @@ if (!$id) {
     echo json_encode(['error' => 'ID du Flow manquant']);
     exit;
 };
-// get a specific filename
+
+// gets a specific filename
 $filename = $_GET['filename'] ?? null;
 
+// gets the trigger_type
+$triggerType = $_GET['trigger_type'] ?? 'MANUAL';
 
 // gets the Flow
 $flow = getFlow($id);
@@ -81,6 +84,7 @@ foreach ($files as $file) {
     if (file_exists($outputPath) && filemtime($fullPath) <= filemtime($outputPath)) {
         $skippedCount++;
         $lastStatus = 'SKIPPED';
+        logConversion($id, $file, 'SKIPPED', null, $triggerType);
         continue;
     }
 
@@ -172,12 +176,12 @@ foreach ($files as $file) {
         if ($returnVar === 0) {
             $successCount++;
             $lastStatus = 'SUCCESS';
-            logConversion($id, $file, 'SUCCESS');
+            logConversion($id, $file, 'SUCCESS', null, $triggerType);
         } else {
             $errorCount++;
             $lastStatus = 'ERROR';
             $errorDetail = !empty($output) ? implode(" ", $output) : "Erreur PowerShell"; // converts the content of the $output array into a string with implode(), or gives a generic error message if $output is empty
-            logConversion($id, $file, 'ERROR', $errorDetail);
+            logConversion($id, $file, 'ERROR', $errorDetail, $triggerType);
         }
     }
 }

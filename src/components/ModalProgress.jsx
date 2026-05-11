@@ -43,7 +43,7 @@ export default function ModalProgress({ flowId, onClose }) {
         
         try {
             // converts a single file by feeding a filename to the conversion script
-            const res = await fetch(`/convert.php?id=${flowId}&filename=${encodeURIComponent(fileName)}`); // encodeURIComponent ensures no special character breaks the URL
+            const res = await fetch(`/convert.php?id=${flowId}&filename=${encodeURIComponent(fileName)}&trigger_type=MANUAL`); // encodeURIComponent ensures no special character breaks the URL
             const result = await res.json();
             
             setLogs(prev => [...prev, { name: fileName, status: result.status }]); // updates the logs state by adding the new line to the previous logs

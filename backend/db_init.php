@@ -33,7 +33,8 @@ try {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         flow_id INTEGER NOT NULL,
         filename TEXT NOT NULL,
-        status TEXT CHECK(status IN ('SUCCESS', 'ERROR')),
+        status TEXT CHECK(status IN ('SUCCESS', 'ERROR', 'SKIPPED')),
+        trigger_type TEXT CHECK(trigger_type IN ('MANUAL', 'AUTO')) DEFAULT 'MANUAL',
         error_msg TEXT,
         converted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (flow_id) REFERENCES flows(id) ON DELETE CASCADE

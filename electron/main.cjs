@@ -89,8 +89,8 @@ async function setupAutoTriggers() {
           console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // for dev purposes
 
           try {
-            // calls the conversion script with the flow_id and the filename as parameters
-            const response = await fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}`); // encodeURIComponent in case of special characters in the url
+            // calls the conversion script with the flow_id, the filename and the trigger_type as parameters
+            const response = await fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}&trigger_type=AUTO`); // encodeURIComponent in case of special characters in the url
             const data = await response.json();
             console.log(`Auto-conversion terminée pour ${fileName} :`, data.status); // for dev purposes
           } catch (err) {

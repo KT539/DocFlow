@@ -99,8 +99,8 @@ function getConversionByFlow($flowId) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 };
 
-function logConversion($flowId, $filename, $status, $errorMsg = null) {
+function logConversion($flowId, $filename, $status, $errorMsg = null, $triggerType = 'MANUAL') {
     $pdo = getDb();
-    $stmt = $pdo->prepare("INSERT INTO conversions (flow_id, filename, status, error_msg) VALUES (:fid, :fname, :status, :msg)");
-    $stmt->execute([':fid' => $flowId, ':fname' => $filename, ':status' => $status, ':msg' => $errorMsg]);
+    $stmt = $pdo->prepare("INSERT INTO conversions (flow_id, filename, status, error_msg, trigger_type) VALUES (:fid, :fname, :status, :msg, :ttype)");
+    $stmt->execute([':fid' => $flowId, ':fname' => $filename, ':status' => $status, ':msg' => $errorMsg, ':ttype' => $triggerType]);
 };
