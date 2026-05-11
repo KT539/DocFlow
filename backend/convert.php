@@ -53,8 +53,8 @@ $lastStatus = 'SKIPPED';
 
 
 foreach ($files as $file) {
-    // ignores the folders . and .. returned by scandir()
-    if ($file === '.' || $file === '..') {
+    // ignores the folders . and .. returned by scandir() and the temporary Office files
+    if ($file === '.' || $file === '..' || str_starts_with($file, '~$')) {
         continue;
     }
     // checks the file is a file, and not a folder
@@ -101,6 +101,7 @@ foreach ($files as $file) {
         New-Object opens Word in the background ;
         Get-Process gets the process's ID, so it can be killed later ; !! from AI !! ;
         $word.Visible = $false ensures Word remains hidden in the background and runs in "non-interactive mode" ;
+        $ DisplayAlerts = 0 turns off pop-up windows
         17 is the internal code for PDF format in Word ; 
         .Close(0) closes Word without saving the changes, to avoid opening a contextual window
         the finally block frees the COM object, and cleans up the RAM, and then forces a kill on the process if it is still openend ; !! from AI !! ;
@@ -112,6 +113,7 @@ foreach ($files as $file) {
                 $word = New-Object -ComObject Word.Application;
                 $word_pid = (Get-Process -Name "Winword" | Where-Object { $_.MainWindowHandle -eq 0 } | Sort-Object -Descending | Select-Object -ExpandProperty Id -First 1);
                 $word.Visible = $false;
+                $word.DisplayAlerts = 0;
                 $doc = $word.Documents.Open(\'' . $safeInput . '\');
                 $doc.ExportAsFixedFormat(\'' . $safeOutput . '\', 17);
                 $doc.Close(0);

@@ -34,8 +34,8 @@ $files = scandir($sourceDir);
 $toConvert = [];
 
 foreach ($files as $file) {
-    // ignores the folders . and .. returned by scandir()
-    if ($file === '.' || $file === '..') {
+    // ignores the folders . and .. returned by scandir() and the remporary Office files
+    if ($file === '.' || $file === '..' || str_starts_with($file, '~$')) {
         continue;
     }
 
