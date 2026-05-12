@@ -19,7 +19,7 @@ export default function ModalProgress({ flowId, onClose }) {
 
     const isCancelledRef = useRef(false);
 
-    const queue_limit = 50;
+    const queue_warning = 50;
     
     useEffect(() => {
         // // creates an internal function inside the useEffect, as useEffect itself can't be async
@@ -58,9 +58,8 @@ export default function ModalProgress({ flowId, onClose }) {
                 const data = await res.json(); // extracts the json data from the response
                 let fileList = data.files || [];
 
-                if (fileList.length > queue_limit) {
-                    setLogs([{ name: "SYSTÈME", status: `Limit de ${queue_limit} fichiers atteinte.`}]);
-                    fileList = fileList.slice(0, queue_limit)
+                if (fileList.length > queue_warning) {
+                    setLogs([{ name: "ALERTE", status: `Grand nombre de fichiers détectés. La conversion va prendre beaucoup de temps.`}]);
                 }
 
                 setFiles(fileList); // updates the files state with the list

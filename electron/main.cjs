@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   07-05-2026
+ * @last_modified   12-05-2026
  */
 
 
@@ -15,6 +15,8 @@ const chokidar = require('chokidar');
 
 let phpServer;
 let watchers = {};
+let isConverting = false;
+let conversionQueue = [];
 
 // launch PHP's integrated dev server on port 8000, directed to the backend/ folder
 function startPhpServer() {
@@ -77,54 +79,99 @@ function checkEnvironment() {
 }
 
 
+async function convQueue() {
+  if (isConverting || conversionQueue.length === 0) {
+      return;
+  }
+
+  isConverting = true;
+  const task = conversionQueue.shift(); // shift() takes the first element out of the array and returns it
+
+  try {
+      console.log(`Conversion de : ${task.fileName}`); // for dev purposes
+      const res = await fetch(`http://localhost:8000/convert.php?id=${task.flowId}&filename=${encodeURIComponent(task.fileName)}&trigger_type=AUTO`);
+      const data = await res.json();
+      console.log(`Terminé : ${task.fileName}`, data.status);
+  } catch (err) {
+      console.error(`Error : ${task.fileName}`, err);
+  }
+
+  isConverting = false; // resets the variable
+  convQueue(); // recursive call to the function until the queue is empty
+}
+
+
 // written by me, but with some help from AI to understand how chokidar works
 async function setupAutoTriggers() {
-  try {
-    const res = await fetch(`http://localhost:8000/api/flows.php`); // gets the flows
-    const flows = await res.json();
-    const autoFlows = Array.isArray(flows) ? flows.filter(f => f.auto_trigger === 1) : []; // if a flows array is returned, filter those with auto_trigger
-    
-    // used an object instead of an array an AI's suggestion
-    Object.values(watchers).forEach(w => w.close()); // closes any instance of the watchers object, to make sure two instances don't overlap on the same folder in case of flow modification
-    watchers = {}; // then resets the object
+    try {
+        const res = await fetch(`http://localhost:8000/api/flows.php`); // gets the flows
+        const flows = await res.json();
+        const autoFlows = Array.isArray(flows) ? flows.filter(f => f.auto_trigger === 1) : []; // if a flows array is returned, filter those with auto_trigger
+      
+        // used an object instead of an array an AI's suggestion
+        Object.values(watchers).forEach(w => w.close()); // closes any instance of the watchers object, to make sure two instances don't overlap on the same folder in case of flow modification
+        watchers = {}; // then resets the object
 
-    autoFlows.forEach(flow => {
-      console.log(`Watching : ${flow.source_dir} for Flow : ${flow.name}`); // for dev purposes
+        autoFlows.forEach(flow => {
+            console.log(`Watching : ${flow.source_dir} for Flow : ${flow.name}`); // for dev purposes
 
-      const watcher = chokidar.watch(flow.source_dir, { // for each flow, chokidar watches the source dir
-        persistent: true, // keeps running as long as the app is running
-        ignoreInitial: true, // ignores the files that are already in the folder at launch
-        depth: 0, // only watches the root folder
-        awaitWriteFinish: true // ensures chokidar doesn't start processing a big file while it is still being copied ; suggesion from AI
-      });
+            const watcher = chokidar.watch(flow.source_dir, { // for each flow, chokidar watches the source dir
+                persistent: true, // keeps running as long as the app is running
+                ignoreInitial: true, // ignores the files that are already in the folder at launch
+                depth: 0, // only watches the root folder
+                awaitWriteFinish: true // ensures chokidar doesn't start processing a big file while it is still being copied ; suggesion from AI
+            });
 
-      watcher.on('add', async (filePath) => { // triggers on the 'add' event, whenever a file is added to the folder
-        // uses path.extname() method to get the new file's extension and check if the file format is valid + activated in the flow
-        const extension = path.extname(filePath).toLowerCase();
-        const isDocx = extension === '.docx' && flow.convert_docx;
-        const isXlsx = extension === '.xlsx' && flow.convert_xlsx;
-        
-        // uses the path-basename() method to get the new file's name
-        if (isDocx || isXlsx) {
-          const fileName = path.basename(filePath);
-          console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // for dev purposes
+            watcher.on('add', async (filePath) => { // triggers on the 'add' event, whenever a file is added to the folder
+                console.log("Fichier détecté :", filePath);
+                console.log("Taille actuelle :", conversionQueue.length);
+                // security limit to the queue
+                if (conversionQueue.length > 30) {
+                  console.log("Limite atteinte, envoi de l'erreur...");  
+                  // with help from AI
+                    const win = BrowserWindow.getAllWindows()[0]; // gets the main (and only) window ; electron can manage multiple windows
+                    if (win) {
+                        win.webContents.send('queue-error', "File d'attente saturée (1000+ fichiers). Veuillez vider la file d'attente."); // sends the error message on the queue-error "canal"
+                    }
+                    return;
+                }
+              
+                // uses path.extname() method to get the new file's extension and check if the file format is valid + activated in the flow
+                const extension = path.extname(filePath).toLowerCase();
+                const isDocx = extension === '.docx' && flow.convert_docx;
+                const isXlsx = extension === '.xlsx' && flow.convert_xlsx;
+          
+                // uses the path-basename() method to get the new file's name
+                if (isDocx || isXlsx) {
+                    const fileName = path.basename(filePath);
+                    console.log(`Auto-trigger: Nouveau fichier détecté : ${fileName}`); // for dev purposes
 
-          try {
-            // calls the conversion script with the flow_id, the filename and the trigger_type as parameters
-            const response = await fetch(`http://localhost:8000/convert.php?id=${flow.id}&filename=${encodeURIComponent(fileName)}&trigger_type=AUTO`); // encodeURIComponent in case of special characters in the url
-            const data = await response.json();
-            console.log(`Auto-conversion terminée pour ${fileName} :`, data.status); // for dev purposes
-          } catch (err) {
-            console.error(`Erreur d'auto-conversion pour ${fileName} :`, err); // for dev purposes
-          }
-        }
-      });
-      watchers[flow.id] = watcher; // stores the watcher in the watchers object, with its flow_id as the key
-    });
-  } catch (err) {
-    console.error("Erreur lors de l'initialisation des watchers:", err); // for dev purposes
+                    // adds the new file to the queue and calls convQueue()
+                    conversionQueue.push({ flowId: flow.id, fileName: fileName });
+                    convQueue();
+                }
+            });
+
+            watchers[flow.id] = watcher; // stores the watcher in the watchers object, with its flow_id as the key
+        });
+    } catch (err) {
+      console.error("Erreur d'initialisation des watchers : ", err);
+    }
+}
+
+
+ipcMain.on('clear-queue', () => { // triggers on receiving the send() from the renderer
+  console.log("File d'attente vidée par l'utilisateur"); // for dev purposes
+  conversionQueue = []; // empties the queue
+});
+
+// sends the queue legnth to the renderer on a 1 sec interval ; with help from AI
+setInterval(() => {
+  const win = BrowserWindow.getAllWindows()[0]; 
+  if (win) {
+    win.webContents.send('queue-status', conversionQueue.length); // sends the queue length on the queue-status "canal"
   }
-};
+}, 1000);
 
 
 // triggers once electron is initialized

@@ -14,6 +14,8 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
     const [flows, setFlows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [executingFlowId, setExecutingFlowId] = useState(null);
+    const [queueCount, setQueueCount] = useState(0);
+    const [overloadMessage, setOverloadMessage] = useState(null);
 
     
     const fetchFlows = async () => {
@@ -29,7 +31,19 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
         }
     };
 
-    useEffect(() => { fetchFlows(); }, []); // empty array of dependencies --> the instruction is executed a single time, just after the first rendering
+    useEffect(() => {
+        fetchFlows();
+
+        window.electronAPI.onQueueUpdate((count) => {
+            setQueueCount(count); // reacts updates the queueCount state every time the main process updates the counter
+        });
+
+        window.electronAPI.onQueueError((msg) => {
+            setOverloadMessage(msg);
+            setTimeout(() => setOverloadMessage(null), 5000); // stop displaying the overload message after 5 seconds
+        });
+    }, []); // empty array of dependencies --> the instruction is executed a single time, just after the first rendering
+
 
     // deletes a flow after confirmation
     const handleDelete = async (id) => {
@@ -38,9 +52,16 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
         fetchFlows(); // refreshes the list after a DELETE
     };
 
+
     const handleExecuteFlow = (id) => {
         setExecutingFlowId(id); // changes the state of executingFlowId, opening the modal
     };
+
+
+    const handleClearQueue = () => {
+        window.electronAPI.clearQueue();
+        setOverloadMessage(null); // resets the overload warning if the queue is cleared
+    }
 
     
     return (
@@ -51,81 +72,118 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
             {loading ? (
                 <p className="text-neutral-500">Chargement...</p>
             ) : (
-                <div className="grid gap-6">
-                    {flows.length === 0 && (
-                        <p className="text-neutral-700 italic">Aucun flow configuré.</p>
-                    )}
-                    
-                    {flows.map(flow => (
-                        <div key={flow.id} className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-                            <div className="p-6">
+                <div>   
+                    <div className="grid gap-6">
+                        {flows.length === 0 && (
+                            <p className="text-neutral-700 italic">Aucun flow configuré.</p>
+                        )}
+                        
+                        {flows.map(flow => (
+                            <div key={flow.id} className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+                                <div className="p-6">
+                                    
+                                    <div className="flex justify-between items-center mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <h2 className="text-xl font-semibold text-neutral-700">{flow.name}</h2>
+                                            {/* SQLite has no native BOOLEAN type and stores the value as 0/1 ; if a 1 or 0 value isn't specified, the short-circuit would display either the <span> or a 0 */}
+                                            {flow.auto_trigger === 1 && (
+                                                <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-medium border border-blue-200">
+                                                    Auto
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => { setSelectedFlowId(flow.id), setCurrentPage('update_flows')}} className="p-2 text-neutral-500 hover:text-neutral-600 transition-colors" title="Mettre à jour">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                </svg>
+                                            </button>
+                                            <button onClick={() => handleDelete(flow.id)} className="p-2 text-red-500 hover:text-red-600 transition-colors" title="Supprimer">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1 mb-3">
+                                        <p className="text-sm text-neutral-500 flex items-center gap-2">
+                                            <span>Source :</span>
+                                            <span>{flow.source_dir}</span>
+                                        </p>
+                                        <p className="text-sm text-neutral-500 flex items-center gap-2">
+                                            <span>Destination :</span>
+                                            <span>{flow.dest_dir}</span>
+                                        </p>
+                                    </div>
+
+                                    <hr className="border-neutral-200 mb-5" />
+
+                                    <div className="flex justify-between items-center text-neutral-600 text-sm">
+                                        <div className="flex gap-6 items-center">
+                                            <span>{flow.last_run ? `${new Date(flow.last_run).toLocaleString('fr-CH')}` : 'Jamais utilisé'}</span> {/* uses toLocaleString to get the swiss date format ; suggestion from AI */}
+                                            {/* uses the react short-circuit to display a string if true and 0 if false ; then filters out the false values and joins the true values */}
+                                            <span>Types : {[flow.convert_docx && 'docx', flow.convert_xlsx && 'xlsx'].filter(Boolean).join(', ')}</span>
+                                            <span>Conversions : {flow.count || 0}</span>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => { 
+                                                    setSelectedFlowId(flow.id); 
+                                                    setCurrentPage('history'); }}
+                                                className="bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-lg hover:bg-neutral-300 transition-colors text-sm" title="Détails">
+                                                Voir détails
+                                            </button>
+                                            <button onClick={() => handleExecuteFlow(flow.id)} className="flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exécuter">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                </svg>
+                                                Exécuter
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* uses some() to check if there is at least 1 flow with auto_trigger */}
+                    {flows.some(flow => flow.auto_trigger === 1) && (
+                        <div className="mt-12">
+                            <hr className="border-neutral-300 mb-8" />
                                 
-                                <div className="flex justify-between items-center mb-3">
-                                    <div className="flex items-center gap-3">
-                                        <h2 className="text-xl font-semibold text-neutral-700">{flow.name}</h2>
-                                        {/* SQLite has no native BOOLEAN type and stores the value as 0/1 ; if a 1 or 0 value isn't specified, the short-circuit would display either the <span> or a 0 */}
-                                        {flow.auto_trigger === 1 && (
-                                            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-medium border border-blue-200">
-                                                Auto
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => { setSelectedFlowId(flow.id), setCurrentPage('update_flows')}} className="p-2 text-neutral-500 hover:text-neutral-600 transition-colors" title="Mettre à jour">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                        </button>
-                                        <button onClick={() => handleDelete(flow.id)} className="p-2 text-red-500 hover:text-red-600 transition-colors" title="Supprimer">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1 mb-3">
-                                    <p className="text-sm text-neutral-500 flex items-center gap-2">
-                                        <span>Source :</span>
-                                        <span>{flow.source_dir}</span>
+                            <div className="bg-white rounded-xl p-6 border border-neutral-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div className="flex flex-col">
+                                    <p className="text-neutral-700 font-semibold">
+                                        Statut du traitement automatique :
                                     </p>
-                                    <p className="text-sm text-neutral-500 flex items-center gap-2">
-                                        <span>Destination :</span>
-                                        <span>{flow.dest_dir}</span>
-                                    </p>
+                                    {overloadMessage ? (
+                                        <span className="text-red-600 font-bold animate-pulse">
+                                            {overloadMessage}
+                                        </span>
+                                    ) : (
+                                        <span className="text-neutral-500">
+                                            Fichiers dans la file d'attente : <b className="text-neutral-700">{queueCount}</b>
+                                        </span>
+                                    )}
                                 </div>
 
-                                <hr className="border-neutral-200 mb-5" />
-
-                                <div className="flex justify-between items-center text-neutral-600 text-sm">
-                                    <div className="flex gap-6 items-center">
-                                        <span>{flow.last_run ? `${new Date(flow.last_run).toLocaleString('fr-CH')}` : 'Jamais utilisé'}</span> {/* uses toLocaleString to get the swiss date format ; suggestion from AI */}
-                                        {/* uses the react short-circuit to display a string if true and 0 if false ; then filters out the false values and joins the true values */}
-                                        <span>Types : {[flow.convert_docx && 'docx', flow.convert_xlsx && 'xlsx'].filter(Boolean).join(', ')}</span>
-                                        <span>Conversions : {flow.count || 0}</span>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => { 
-                                                setSelectedFlowId(flow.id); 
-                                                setCurrentPage('history'); }}
-                                            className="bg-neutral-200 text-neutral-700 px-4 py-1.5 rounded-lg hover:bg-neutral-300 transition-colors text-sm" title="Détails">
-                                            Voir détails
-                                        </button>
-                                        <button onClick={() => handleExecuteFlow(flow.id)} className="flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exécuter">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                                            </svg>
-                                            Exécuter
-                                        </button>
-                                    </div>
-                                </div>
-
+                                <button 
+                                    onClick={handleClearQueue}
+                                    disabled={queueCount === 0}
+                                    className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2
+                                        ${queueCount === 0 ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed border border-neutral-300' : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-200 hover:text-red-700 shadow-sm'}`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Vider la file d'attente
+                                </button>
                             </div>
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
+
             {/* progression modal */}
             {executingFlowId && (
                 <ModalProgress

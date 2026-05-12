@@ -3,7 +3,7 @@
  * @file            backend/convert.php
  * @project         DocFlow
  * @author          Kilian Testard
- * @last_modified   11-05-2026
+ * @last_modified   12-05-2026
  */
 
 // the whole conversion script was written by myself, but with help from AI, specially the commands themselves
@@ -39,6 +39,19 @@ if (!is_dir($sourceDir) || !is_dir($destDir)) {
     echo json_encode(['error' => 'Dossier source ou destination inaccessible']);
     exit;
 };
+
+// checks if the user has the persmission to write in the destDir
+if (!is_writable($destDir)) {
+    echo json_encode(['error' => 'Permissions insuffisantes ou dossier de destination inexistant']);
+    exit;
+};
+
+// checks if the destination drive has enough free space
+$freeSpace = disk_free_space($destDir);
+if ($freeSpace < 10 * 1024 * 1024) { // checks for at least 10 free Mo
+    echo json_encode(['error' => 'Espace disque insuffisant']);
+    exit;
+}
 
 $files = $filename ? [$filename] : scandir($sourceDir); // processes either the content of the source dir or a single file if a filname is received
 
@@ -168,7 +181,7 @@ foreach ($files as $file) {
         // replace the returns-to-line with spaces, to stop Windows's CMD from trunking the command
         $cleanCommand = str_replace(["\r", "\n"], ' ', $partialCommand);
         // wraps the partial command in a Windows-executable system command
-        $fullCommand = "powershell -ExecutionPolicy Bypass -Command \"$cleanCommand\" 2>&1"; // 2>&1 redirects STDERR to STDOUT, so that PowerShell system errors are received by PHP ($output only receives the data on STDOUT) ; help from AI
+        $fullCommand = "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$cleanCommand\" 2>&1"; // 2>&1 redirects STDERR to STDOUT, so that PowerShell system errors are received by PHP ($output only receives the data on STDOUT) ; help from AI
 
         // configures the descriptors (stdin = 0, stdout = 1, stderr = 3) ; !! from AI !!
         $descriptorspec = [
