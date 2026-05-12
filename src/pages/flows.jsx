@@ -40,7 +40,6 @@ export default function Flows({ setCurrentPage, setSelectedFlowId }) {
 
         window.electronAPI.onQueueError((msg) => {
             setOverloadMessage(msg);
-            setTimeout(() => setOverloadMessage(null), 5000); // stop displaying the overload message after 5 seconds
         });
     }, []); // empty array of dependencies --> the instruction is executed a single time, just after the first rendering
 

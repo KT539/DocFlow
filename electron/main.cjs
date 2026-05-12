@@ -123,11 +123,8 @@ async function setupAutoTriggers() {
             });
 
             watcher.on('add', async (filePath) => { // triggers on the 'add' event, whenever a file is added to the folder
-                console.log("Fichier détecté :", filePath);
-                console.log("Taille actuelle :", conversionQueue.length);
                 // security limit to the queue
-                if (conversionQueue.length > 30) {
-                  console.log("Limite atteinte, envoi de l'erreur...");  
+                if (conversionQueue.length >= 500) {  
                   // with help from AI
                     const win = BrowserWindow.getAllWindows()[0]; // gets the main (and only) window ; electron can manage multiple windows
                     if (win) {
