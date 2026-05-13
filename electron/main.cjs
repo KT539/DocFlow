@@ -66,6 +66,15 @@ function checkEnvironment() {
       return false;
   }
 
+  // checks that PHP is installed and in the PATH
+  try {
+    execSync('php -v');
+  } catch (err) {
+    dialog.showErrorBox('PHP introuvable', 'L\'interpréteur PHP n\'est pas installé ou n\'est pas dans le PATH. Veuillez l\'installer avant d\'utiliser DocFlow.');
+    app.quit();
+    return false;
+  }
+
   try {
       // tries to get the location of the Word/Excel executable in he registry ; !! from AI !!
       execSync('reg query "HKEY_CLASSES_ROOT\\Word.Application"');
