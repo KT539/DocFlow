@@ -171,13 +171,13 @@ ipcMain.on('clear-queue', () => { // triggers on receiving the send() from the r
   conversionQueue = []; // empties the queue
 });
 
-// sends the queue legnth to the renderer on a 1 sec interval ; with help from AI
+// sends the queue legnth to the renderer on a short interval ; with help from AI
 setInterval(() => {
   const win = BrowserWindow.getAllWindows()[0]; 
   if (win) {
     win.webContents.send('queue-status', conversionQueue.length); // sends the queue length on the queue-status "canal"
   }
-}, 1000);
+}, 100);
 
 
 // triggers once electron is initialized
