@@ -8,7 +8,7 @@
 
 
 import { useState } from 'react';
-import Nav from './nav.jsx';
+import Nav from './components/nav.jsx';
 import Flows from './pages/flows.jsx';
 import NewFlows from './pages/new_flows.jsx';
 import UpdateFlows from './pages/update_flows.jsx';
