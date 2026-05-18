@@ -12,6 +12,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const chokidar = require('chokidar');
 const net = require('net');
+const fs = require('fs');
 
 
 let phpServer;
@@ -55,6 +56,16 @@ ipcMain.handle('select-directory', async (event) => {
     return null; // returns null if the user closed the dialog without selecting
   } else {
     return result.filePaths[0]; // returns the selected folder path
+  }
+});
+
+// handles the is-directory IPC call : checks if the path leads to a folder
+ipcMain.handle('is-directory', async (event, folderPath) => {
+  try {
+    const stats = await fs.promises.stat(folderPath);
+    return stats.isDirectory();
+  } catch (err) {
+    return false;
   }
 });
 

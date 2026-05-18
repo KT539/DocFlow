@@ -11,13 +11,13 @@
 and the renderer process (Chromium+React), avoiding direct Node.js access from the renderer */
 
 const { contextBridge, ipcRenderer } = require('electron');
-const fs = require('fs');
 
 // contextBridge allows to create window.electronAPI objects, making them accessible from the renderer without exposing ipcRenderer itself
 contextBridge.exposeInMainWorld('electronAPI', {
     selectDirectory: () => ipcRenderer.invoke('select-directory'),
     refreshWatchers: () => ipcRenderer.send('refresh-watchers'), // uses .send() instead of .invoke(), as the renderer doesn't need an answer from the main process
     clearQueue: () => ipcRenderer.send('clear-queue'),
+    isDirectory: (path) => ipcRenderer.invoke('is-directory', path),
     // callback functions
     onQueueUpdate: (callback) => {
         ipcRenderer.removeAllListeners('queue-status'); // cleans up the old listener before opening a new one
@@ -27,11 +27,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.removeAllListeners('queue-error');
         ipcRenderer.on('queue-error', (event, message) => callback(message));
     },
-    isDirectory: (path) => { // checks if the path exists/leads to a folder, returns false if it doesn't
-        try {
-            return fs.statSync(path).isDirectory();
-        } catch (err) {
-            return false;
-        }
-    }
 });

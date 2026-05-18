@@ -38,8 +38,8 @@ export default function NewFlows({ setCurrentPage }) {
             return; 
         }
 
-        const isSourceValid = window.electronAPI.isDirectory(form.source_dir);
-        const isDestValid = window.electronAPI.isDirectory(form.dest_dir); // checks if the source and dest foledrs are directories
+        const isSourceValid = await window.electronAPI.isDirectory(form.source_dir);
+        const isDestValid = await window.electronAPI.isDirectory(form.dest_dir); // checks if the source and dest foledrs are directories
 
         // if not, changes the status and stops the execution
         if (!isSourceValid) {
