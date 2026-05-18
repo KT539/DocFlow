@@ -40,9 +40,15 @@ if (!is_dir($sourceDir) || !is_dir($destDir)) {
     exit;
 };
 
+// checks if the user has the permission to read the sourceDir
+if (!is_readable($sourceDir)) {
+    echo json_encode(['error' => 'Permissions insuffisantes sur le dossier source']);
+    exit;
+};
+
 // checks if the user has the persmission to write in the destDir
 if (!is_writable($destDir)) {
-    echo json_encode(['error' => 'Permissions insuffisantes ou dossier de destination inexistant']);
+    echo json_encode(['error' => 'Permissions insuffisantes sur le dossier de destination']);
     exit;
 };
 
