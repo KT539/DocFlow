@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   12-05-2026
+ * @last_modified   18-05-2026
  */
 
 
@@ -11,6 +11,7 @@
 and the renderer process (Chromium+React), avoiding direct Node.js access from the renderer */
 
 const { contextBridge, ipcRenderer } = require('electron');
+const fs = require('fs');
 
 // contextBridge allows to create window.electronAPI objects, making them accessible from the renderer without exposing ipcRenderer itself
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -25,5 +26,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onQueueError: (callback) => {
         ipcRenderer.removeAllListeners('queue-error');
         ipcRenderer.on('queue-error', (event, message) => callback(message));
+    },
+    isDirectory: (path) => { // checks if the path exists/leads to a folder, returns false if it doesn't
+        try {
+            return fs.statSync(path).isDirectory();
+        } catch (err) {
+            return false;
+        }
     }
 });

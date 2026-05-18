@@ -38,6 +38,19 @@ export default function NewFlows({ setCurrentPage }) {
             return; 
         }
 
+        const isSourceValid = window.electronAPI.isDirectory(form.source_dir);
+        const isDestValid = window.electronAPI.isDirectory(form.dest_dir); // checks if the source and dest foledrs are directories
+
+        // if not, changes the status and stops the execution
+        if (!isSourceValid) {
+            setStatus('error_invalid_folder');
+            return;
+        }
+        if (!isDestValid) {
+            setStatus('error_invalid_folder');
+            return;
+        }
+
         try {
             const res = await fetch('/api/flows.php', {
                 method: 'POST', // specifies the method (fetch has GET as its default method)
@@ -195,6 +208,11 @@ export default function NewFlows({ setCurrentPage }) {
                     {status === 'error_same_name' && (
                         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
                             Un Flow avec ce nom existe déjà.
+                        </p>
+                    )}
+                    {status === 'error_invalid_folder' && (
+                        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                            Dossiers sélectionnés invalides — vérifiez les champs.
                         </p>
                     )}
                     <div className="flex gap-3">
