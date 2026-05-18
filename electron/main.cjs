@@ -105,7 +105,7 @@ async function checkEnvironment() {
   }
 
   try {
-      // tries to get the location of the Word/Excel executable in he registry ; !! from AI !!
+      // checks for access to the COM objects classes in the Windows registry ; !! from AI !!
       execSync('reg query "HKEY_CLASSES_ROOT\\Word.Application"');
       execSync('reg query "HKEY_CLASSES_ROOT\\Excel.Application"');
   } catch (err) {
