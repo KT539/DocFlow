@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   12-05-2026
+ * @last_modified   18-05-2026
  */
 
 
@@ -11,6 +11,7 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 const chokidar = require('chokidar');
+const net = require('net');
 
 
 let phpServer;
@@ -57,9 +58,26 @@ ipcMain.handle('select-directory', async (event) => {
   }
 });
 
+// tries to connect to the port 8000, to see if it is already in use ; help from AI
+function checkPort(port) {
+    return new Promise((resolve) => { // create a Promise, with a resolve callback function
+      const tester = new net.Socket() // creates a temporary TCP server
+      // .once() instead of .on(), so that the listener only triggers once
+      tester.once('connect', () => {
+          tester.destroy();
+          resolve(false);
+      });
+         // if an error event occurs, resolves the Promise with false
+      tester.once('error', (err) => {
+          tester.destroy(); // if the server launches and the listening event occurs, closes the server and resolves the Promise with true
+          resolve(true);
+      });
+      tester.connect(port, '127.0.0.1'); // tries to open the server on the port given as parameter
+    });
+}
 
 // checks the user's environment before launching
-function checkEnvironment() {
+async function checkEnvironment() {
   if (process.platform !== 'win32') {
       dialog.showErrorBox('Système non supporté', 'DocFlow ne fonctionne que sur Windows.');
       app.quit();
@@ -79,12 +97,29 @@ function checkEnvironment() {
       // tries to get the location of the Word/Excel executable in he registry ; !! from AI !!
       execSync('reg query "HKEY_CLASSES_ROOT\\Word.Application"');
       execSync('reg query "HKEY_CLASSES_ROOT\\Excel.Application"');
-      return true;
   } catch (err) {
       dialog.showErrorBox('Microsoft Office introuvable', 'DocFlow a besoin de Word et de Excel pour fonctionner. Veuillez installer Office et réessayer.');
       app.quit();
       return false;
   }
+
+  // checks if the port 8000 is already in use
+  const port8000Available = await checkPort(8000);
+  if (!port8000Available) {
+    dialog.showErrorBox('Port 8000 indisponible', 'Le port 8000 est déjà utilisé par un autre processus. Veuillez fermer l\'application concernée avant de relancer DocFlow.');
+    app.quit();
+    return false;
+  }
+
+  // checks if the port 5173 is already in use
+  const port5173Available = await checkPort(5173);
+  if (!port5173Available) {
+    dialog.showErrorBox('Port 5173 indisponible', 'Le port 5173 est déjà utilisé par un autre processus. Veuillez fermer l\'application concernée avant de relancer DocFlow.');
+    app.quit();
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -181,8 +216,8 @@ setInterval(() => {
 
 
 // triggers once electron is initialized
-app.whenReady().then(() => {
-  if (!checkEnvironment()) { // checks the user's environment first
+app.whenReady().then(async () => {
+  if (!await checkEnvironment()) { // checks the user's environment first
     return;
   }
   try {
