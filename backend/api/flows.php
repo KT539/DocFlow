@@ -51,17 +51,26 @@ switch ($method) {
             echo json_encode(['error' => 'Veuillez sélectionner au moins un format de fichiers']);
             exit;
         }
-
-        $id = createFlow(
+        try {
+            $id = createFlow(
             $data['name'],
             $data['source_dir'],
             $data['dest_dir'],
             $data['auto_trigger'] ?? false,
             $data['convert_docx'] ?? true,
-            $data['convert_xlsx'] ?? true
-        );
+            $data['convert_xlsx'] ?? true);
 
-        echo json_encode(['success' => true, 'id' => $id]);
+            echo json_encode(['success' => true, 'id' => $id]);
+        } catch (PDOException $e) {
+            if (str_contains($e->getMessage(), 'UNIQUE constraint failed')) { // checks if e.getMessage() contains the string 'UNIQUE constraint failed'
+                http_response_code(409);
+                echo json_encode(['error' => 'Un Flow avec ce nom existe déjà']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Erreur serveur']);
+            }
+            exit;
+        }
         break;
 
     case 'PATCH':
@@ -72,13 +81,24 @@ switch ($method) {
         }
         // decodes the data from the rwa body of the query and builds a PHP array
         $data = json_decode(file_get_contents('php://input'), true); // !! from AI !!
-        $updated = updateFlow($id, $data);
-        if (!$updated) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Flow introuvable ou aucune modification']);
+        try {    
+            $updated = updateFlow($id, $data);
+            if (!$updated) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Flow introuvable ou aucune modification']);
+                exit;
+            }
+            echo json_encode(['success' => true]);
+        } catch (PDOException $e) {
+            if (str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Un Flow avec ce nom existe déjà']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Erreur serveur']);
+            }
             exit;
         }
-        echo json_encode(['success' => true]);
         break;
 
     case 'DELETE':

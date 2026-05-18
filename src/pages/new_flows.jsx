@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   04-05-2026
+ * @last_modified   18-05-2026
  */
 
 
@@ -57,7 +57,11 @@ export default function NewFlows({ setCurrentPage }) {
             setForm({ name: '', source_dir: '', dest_dir: '', auto_trigger: false, convert_docx: true, convert_xlsx: true }); // resets the form
             setTimeout(() => setCurrentPage('flows'), 1500); // returns to main page after 1.5 seconds
         } catch (err) {
-            setStatus('error');
+            if (err.message === 'Un Flow avec ce nom existe déjà') {
+                setStatus('error_same_name');
+            } else {
+                setStatus('error');
+            }
         }
     };
 
@@ -186,6 +190,11 @@ export default function NewFlows({ setCurrentPage }) {
                     {status === 'error_no_format' && (
                         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
                             Veuillez sélectionner au moins un format de fichier.
+                        </p>
+                    )}
+                    {status === 'error_same_name' && (
+                        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                            Un Flow avec ce nom existe déjà.
                         </p>
                     )}
                     <div className="flex gap-3">

@@ -4,7 +4,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   04-05-2026
+ * @last_modified   18-05-2026
  */
 
 // used both AI and official doc to learn about PDO and its syntax
@@ -21,7 +21,7 @@ try {
     $sql = "
     CREATE TABLE IF NOT EXISTS flows (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,
         source_dir TEXT NOT NULL,
         dest_dir TEXT NOT NULL,
         auto_trigger BOOLEAN DEFAULT 0,
