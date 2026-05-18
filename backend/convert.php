@@ -3,10 +3,10 @@
  * @file            backend/convert.php
  * @project         DocFlow
  * @author          Kilian Testard
- * @last_modified   12-05-2026
+ * @last_modified   18-05-2026
  */
 
-// the whole conversion script was written by myself, but with help from AI, specially the commands themselves
+// most of the script was written by myself, but with help from AI, specially the PowerShell commands themselves
 
 header('Content-Type: application/json');
 require_once 'db.php'; // imports the file only once
@@ -68,6 +68,8 @@ $lastStatus = 'SKIPPED';
 
 
 foreach ($files as $file) {
+    set_time_limit(45); // resets PHP's internal timeout ; suggestion from AI
+
     // ignores the folders . and .. returned by scandir() and the temporary Office files
     if ($file === '.' || $file === '..' || str_starts_with($file, '~$')) {
         continue;
@@ -200,12 +202,22 @@ foreach ($files as $file) {
         $process = proc_open($fullCommand, $descriptorspec, $pipes);
 
         if (is_resource($process)) {
+            // makes the pipes non-blocking ; !! from AI !!
+            stream_set_blocking($pipes[1], false);
+            stream_set_blocking($pipes[2], false);
+            
             $isTimeout = false;
             $timeout = 30;
             $startTime = time();
+            $stdout = '';
+            $stderr = '';
 
             while (true) {
                 $status = proc_get_status($process); // gets status-related info in real time
+                
+                $stdout .= stream_get_contents($pipes[1]);
+                $stderr .= stream_get_contents($pipes[2]);
+                
                 if (!$status['running']) { // if the process is no longer running, breaks the loop
                     break;
                 }
@@ -218,21 +230,25 @@ foreach ($files as $file) {
                 usleep(100000); // wait 0.1 second before checking again, to stop CPU overloads
             }
 
-            $stdout = stream_get_contents($pipes[1]); // reads the info in the output pipe
-            $stderr = stream_get_contents($pipes[2]);
-
-            foreach ($pipes as $pipe) { 
-                fclose($pipe); // closes the pipes
+            // cleanly closes the pipes
+            foreach ($pipes as $pipe) {
+                if (is_resource($pipe)) {
+                    fclose($pipe);
+                }
             }
-            $returnVar = proc_close($process); // defines returnVar with the PS exit code
+            
 
             if ($isTimeout) {
+                proc_close($process);
+
                 $errorCount++;
                 $lastStatus = 'ERROR';
                 $errorDetail = "Timeout : La conversion a pris trop de temps (fichier bloqué ou trop lourd).";
                 logConversion($id, $file, 'ERROR', $errorDetail, $triggerType);
                 continue;
             }
+
+            $returnVar = proc_close($process);
 
             // with every iteration, insert a new row in the conversions table of the db
             if ($returnVar === 0) { // returnVar = output code (0 = success, other = error)
