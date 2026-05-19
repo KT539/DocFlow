@@ -3,7 +3,7 @@
  * @project         DocFlow
  * @author          Kilian Testard
  * @project_lead    Pascal Hurni
- * @last_modified   11-05-2026
+ * @last_modified   19-05-2026
  */
 
 // the modal was written by myself, with help from AI

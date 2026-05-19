@@ -3,7 +3,8 @@
  * @file            backend/convert.php
  * @project         DocFlow
  * @author          Kilian Testard
- * @last_modified   18-05-2026
+ * @project_lead    Pascal Hurni
+ * @last_modified   19-05-2026
  */
 
 // most of the script was written by myself, but with help from AI, specially the PowerShell commands themselves
