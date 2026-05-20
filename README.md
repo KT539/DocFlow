@@ -1,6 +1,6 @@
 # DocFlow
 
-**DocFlow** est une application de bureau Windows qui automatise la conversion de documents Word (`.docx`) et Excel (`.xlsx`) en PDF. Elle permet de configurer des *Flows* — des règles associant un dossier source à un dossier de destination — qui peuvent être exécutés manuellement ou surveillés en temps réel pour convertir automatiquement tout nouveau fichier déposé.
+**DocFlow** est une application de bureau Windows qui automatise la conversion de documents Word (`.docx`) et Excel (`.xlsx`) en PDF. Elle permet de configurer des **Flows** — des règles associant un dossier source à un dossier de destination — qui peuvent être exécutés manuellement ou surveillés en temps réel pour convertir automatiquement tout nouveau fichier déposé.
 
 > Projet réalisé dans le cadre de mon TPI.
 
@@ -90,10 +90,10 @@ DocFlow/
     ├── App.jsx                 # Composant racine, gestion de la navigation par état
     ├── styles.css              # Import Tailwind CSS
     ├── components/
-    │   ├── nav.jsx             # Barre de navigation latérale (collapsible)
+    │   ├── nav.jsx             # Barre de navigation latérale
     │   └── ModalProgress.jsx   # Modale de suivi de la conversion manuelle
     └── pages/
-        ├── flows.jsx           # Page principale : liste des Flows et statut auto
+        ├── flows.jsx           # Page principale : liste des Flows et compteur file d'attente
         ├── new_flows.jsx       # Formulaire de création d'un Flow
         ├── update_flows.jsx    # Formulaire de modification d'un Flow
         ├── history.jsx         # Historique et statistiques d'un Flow
@@ -116,18 +116,19 @@ PHP lance PowerShell via `proc_open()`, qui ouvre des pipes `stdout` et `stderr`
 
 ### Architecture Electron : Main Process, Renderer Process et IPC
 
-Electron sépare l'application en deux processus isolés. Le **Main Process** a accès à Node.js et aux API système ; le **Renderer Process** exécute l'interface React dans Chromium, sans accès direct à Node.js. La communication entre les deux s'effectue via **IPC** (Inter-Process Communication) :
+Electron sépare l'application en deux processus isolés. Le **Main Process** a accès à Node.js et aux API système ; le **Renderer Process** exécute l'interface React dans Chromium, sans accès direct à Node.js. La communication entre les deux s'effectue via l'**IPC** (Inter-Process Communication) :
 
 - `ipcMain.handle` / `ipcRenderer.invoke` pour les appels avec réponse (ex. ouverture de l'explorateur de fichiers)
 - `ipcMain.on` / `ipcRenderer.send` pour les messages sans réponse attendue (ex. rafraîchissement des watchers)
 - `win.webContents.send` / `ipcRenderer.on` pour les messages du Main vers le Renderer (ex. compteur de file d'attente toutes les 100 ms)
 
-Le fichier `preload.cjs` expose ces canaux de manière sécurisée via `contextBridge`, sans jamais donner au Renderer un accès direct à Node.js.
+Le fichier `preload.cjs` expose ces canaux de manière sécurisée via `contextBridge`, sans jamais donner au Renderer Process un accès direct à Node.js.
 
 ### Surveillance automatique avec Chokidar
 
-La fonction `setupAutoTriggers()` instancie un watcher Chokidar par Flow automatique, configuré avec :
+La fonction `setupAutoTriggers()` instancie un watcher Chokidar sur chaque Flow automatique, configuré avec :
 
+- `persistent: true` — reste actif pour toute la durée de vie de l'application
 - `ignoreInitial: true` — ignore les fichiers déjà présents au démarrage de la surveillance
 - `depth: 0` — surveille uniquement le répertoire racine, sans récursion
 - `awaitWriteFinish: true` — attend la fin de l'écriture avant de déclencher l'événement, évitant de tenter de convertir un fichier encore en cours de copie
@@ -136,7 +137,7 @@ Les watchers sont fermés et réinstanciés à chaque modification de Flow, pour
 
 ### File d'attente de conversion automatique
 
-Les fichiers détectés par Chokidar sont ajoutés à un tableau `conversionQueue` dans le Main Process. La fonction récursive `convQueue()` traite les entrées une par une via un verrou booléen `isConverting`, garantissant qu'une seule instance PowerShell est active à la fois. La file est plafonnée à 500 éléments, au-delà desquels une alerte est envoyée au Renderer via IPC.
+Les fichiers détectés par Chokidar sont ajoutés à un tableau `conversionQueue` dans le Main Process. La fonction récursive `convQueue()` traite les entrées une par une via un verrou booléen `isConverting`, garantissant qu'une seule instance PowerShell est active à la fois. La file est plafonnée à 500 éléments, au-delà desquels une alerte est envoyée au Renderer Process via l'IPC.
 
 ### Proxy Vite et CORS
 
