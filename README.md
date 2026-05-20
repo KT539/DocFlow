@@ -35,7 +35,7 @@
 
 - **Windows** uniquement (dépendance aux objets COM Microsoft Office)
 - **Node.js** ≥ 18 et **npm**
-- **PHP 8** installé et accessible dans le PATH système
+- **PHP** ≥ 8 installé et accessible dans le PATH système
 - **Microsoft Office** (Word et Excel) installé avec une licence valide
 
 ---
@@ -57,8 +57,8 @@ Récupérer la release la plus récente sur la page du projet : https://github.c
 `npm install`
 
 ### 4. Lancer l'application (Vite + Electron en parallèle)
-`npm start`
-
+`npm start`  
+  
 > **Remarque** : Au premier démarrage, DocFlow initialise automatiquement la base de données SQLite (`database/db.sqlite`).
 
 ---
