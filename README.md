@@ -42,21 +42,24 @@
 
 ## Installation et démarrage
 
-```bash
-# 1. Cloner le dépôt
-git clone https://github.com/KT539/DocFlow.git
-cd DocFlow
+# 1. Contrôler l'environnement
+S'assurer d'utiliser une machine Windows
+S'assurer que les bonnes versions de Node.je (≥ 18) et PHP (≥ 8) sont installées
+S'assurer que Microsoft Word et Microsoft Excel sont installés, et qu'une licence Office est activée
+S'assurer que `php.exe` est configuré dans le PATH système
+S'assurer que les extensions PHP `pdo_sqlite`, `sqlite3` et `com_dotnet` sont activées dans `php.ini`
+S'assurer que les ports réseau 5173 et 8000 sont libres
 
-# 2. Installer les dépendances Node.js
-npm install
+# 2. Récupérer la release
+Récupérer la release la plus récente sur la page du projet : https://github.com/KT539/DocFlow.git
 
-# 3. Lancer l'application (Vite + Electron en parallèle)
-npm start
-```
+# 3. Installer les dépendances Node.js
+`npm install`
 
-Au premier démarrage, DocFlow initialise automatiquement la base de données SQLite (`database/db.sqlite`).
+# 4. Lancer l'application (Vite + Electron en parallèle)
+`npm start`
 
-> **Remarque** : les ports `5173` (Vite) et `8000` (PHP) doivent être disponibles sur la machine.
+> **Remarque** : Au premier démarrage, DocFlow initialise automatiquement la base de données SQLite (`database/db.sqlite`).
 
 ---
 
